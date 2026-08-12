@@ -20,20 +20,14 @@ export function Header() {
             <p className="text-[11px] text-white/50">Alfenas-MG · aberto 24h</p>
           </div>
         </Link>
-        <nav className="flex items-center gap-5 text-sm">
-          <Link
-            href="/#catalogo"
-            className="hidden sm:block hover:text-vermelho-vivo transition-colors"
-          >
-            Produtos
-          </Link>
-          <Link
-            href="/pedido"
-            className="rounded-full bg-vermelho-vivo px-4 py-2 font-medium text-preto hover:brightness-95 transition"
-          >
-            Fazer pedido
-          </Link>
-        </nav>
+        <a
+          href="https://wa.me/5535910034182"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full bg-vermelho-vivo px-4 py-2 text-sm font-medium text-preto hover:brightness-95 transition"
+        >
+          WhatsApp
+        </a>
       </div>
     </header>
   );

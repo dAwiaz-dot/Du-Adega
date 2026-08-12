@@ -10,8 +10,7 @@ Instagram: https://www.instagram.com/du_bebidas.26/
 Destilados (whisky, gin, vodka), vinhos, cerveja, gelo, carvão, água e refrigerante — entrega rápida em Alfenas-MG.
 
 ## Páginas
-- /: apresentação da loja, horário de funcionamento e cardápio em destaque
-- /pedido: pedido online com carrinho, escolha de produtos e dados de entrega
+- /: pedido online direto — cardápio com carrinho, escolha de produtos e dados de entrega
 
 ## Observações
 Pagamento combinado na entrega. Site voltado a pedidos locais em Alfenas-MG, sem entrega para outras cidades.
