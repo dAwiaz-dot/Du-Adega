@@ -2,17 +2,30 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { categoriaIcone } from "@/data/produtos";
-import type { Produto } from "@/lib/db";
+import type { Produto, Categoria } from "@/lib/db";
 
 type Carrinho = Record<string, number>;
 
-export function PedidoForm({ produtosIniciais }: { produtosIniciais: Produto[] }) {
+export function PedidoForm({
+  produtosIniciais,
+  categoriasIniciais,
+}: {
+  produtosIniciais: Produto[];
+  categoriasIniciais: Categoria[];
+}) {
   const produtos = produtosIniciais;
-  const categorias = useMemo(
-    () => Array.from(new Set(produtos.map((p) => p.categoria))),
-    [produtos]
+  const categoriaIcone = useMemo(
+    () => Object.fromEntries(categoriasIniciais.map((c) => [c.nome, c.icone])),
+    [categoriasIniciais]
   );
+  const categorias = useMemo(() => {
+    const presentes = new Set(produtos.map((p) => p.categoria));
+    const ordenadas = categoriasIniciais
+      .filter((c) => presentes.has(c.nome))
+      .map((c) => c.nome);
+    const semCategoria = Array.from(presentes).filter((c) => !ordenadas.includes(c));
+    return [...ordenadas, ...semCategoria];
+  }, [produtos, categoriasIniciais]);
 
   const [carrinho, setCarrinho] = useState<Carrinho>({});
   const [clienteNome, setClienteNome] = useState("");

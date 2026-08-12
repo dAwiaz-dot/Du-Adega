@@ -5,6 +5,7 @@ import { Footer } from "@/components/Footer";
 import { PedidoForm } from "@/components/PedidoForm";
 import { SocialFloat } from "@/components/SocialFloat";
 import { listarProdutosAtivos } from "@/lib/produtos";
+import { listarCategorias } from "@/lib/categorias";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
   const produtos = listarProdutosAtivos();
+  const categorias = listarCategorias();
 
   return (
     <div className="flex min-h-full flex-col">
@@ -89,7 +91,7 @@ export default function Home() {
         </section>
 
         <div className="mx-auto max-w-3xl px-6 pb-10">
-          <PedidoForm produtosIniciais={produtos} />
+          <PedidoForm produtosIniciais={produtos} categoriasIniciais={categorias} />
         </div>
       </main>
 

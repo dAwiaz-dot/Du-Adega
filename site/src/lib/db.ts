@@ -39,6 +39,12 @@ db.exec(`
     ordem INTEGER NOT NULL DEFAULT 0,
     criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
+
+  CREATE TABLE IF NOT EXISTS categorias (
+    nome TEXT PRIMARY KEY,
+    icone TEXT NOT NULL DEFAULT '🍹',
+    ordem INTEGER NOT NULL DEFAULT 0
+  );
 `);
 
 const SEED_PRODUTOS = [
@@ -143,16 +149,68 @@ const SEED_PRODUTOS = [
   },
 ];
 
-// INSERT OR IGNORE: seguro mesmo se múltiplos processos (ex: build com
-// vários workers) tentarem semear o catálogo ao mesmo tempo.
+// Semeia só se a tabela estiver vazia (primeiro boot). Isso garante que,
+// depois de renomear ou apagar algo pelo admin, a semente não "ressuscita"
+// o dado antigo — nem no mesmo processo, nem num redeploy futuro.
+// O try/catch cobre a corrida entre múltiplos workers do build tentando
+// semear ao mesmo tempo (um vence, o outro esbarra numa UNIQUE e ignora).
+function semearSeVazio<T>(
+  tabela: string,
+  itens: T[],
+  inserirUm: (item: T, index: number) => void
+) {
+  const { count } = db
+    .prepare(`SELECT COUNT(*) as count FROM ${tabela}`)
+    .get() as { count: number };
+  if (count > 0) return;
+
+  const transacao = db.transaction(() => {
+    itens.forEach((item, index) => inserirUm(item, index));
+  });
+  try {
+    transacao();
+  } catch {
+    // outro processo semeou ao mesmo tempo — tudo bem, ignora
+  }
+}
+
 const inserirSemente = db.prepare(`
   INSERT OR IGNORE INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem)
   VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem)
 `);
-const semear = db.transaction((itens: typeof SEED_PRODUTOS) => {
-  itens.forEach((item, index) => inserirSemente.run({ ...item, ordem: index }));
-});
-semear(SEED_PRODUTOS);
+semearSeVazio("produtos", SEED_PRODUTOS, (item, index) =>
+  inserirSemente.run({ ...item, ordem: index })
+);
+
+const SEED_CATEGORIAS = [
+  { nome: "Vinhos", icone: "🍷" },
+  { nome: "Cervejas", icone: "🍺" },
+  { nome: "Destilados", icone: "🥃" },
+  { nome: "Gelo e Carvão", icone: "🧊" },
+  { nome: "Água e Refrigerante", icone: "🥤" },
+];
+
+const inserirCategoriaSemente = db.prepare(`
+  INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, @icone, @ordem)
+`);
+semearSeVazio("categorias", SEED_CATEGORIAS, (item, index) =>
+  inserirCategoriaSemente.run({ ...item, ordem: index })
+);
+
+// Garante que toda categoria já usada em algum produto exista na tabela
+// (cobre bancos antigos, migrados antes dessa tabela existir).
+const categoriasEmUso = db
+  .prepare("SELECT DISTINCT categoria FROM produtos")
+  .all() as { categoria: string }[];
+const { count: maxOrdemCategoria } = db
+  .prepare("SELECT COALESCE(MAX(ordem), -1) + 1 as count FROM categorias")
+  .get() as { count: number };
+const garantirCategoria = db.prepare(
+  "INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, '🍹', @ordem)"
+);
+categoriasEmUso.forEach((c, index) =>
+  garantirCategoria.run({ nome: c.categoria, ordem: maxOrdemCategoria + index })
+);
 
 export type PedidoItem = {
   id: string;
@@ -184,4 +242,10 @@ export type Produto = {
   ativo: number;
   ordem: number;
   criado_em: string;
+};
+
+export type Categoria = {
+  nome: string;
+  icone: string;
+  ordem: number;
 };

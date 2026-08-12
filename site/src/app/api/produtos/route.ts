@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 import { listarProdutosAtivos, listarTodosProdutos, gerarIdProduto } from "@/lib/produtos";
+import { garantirCategoria } from "@/lib/categorias";
 
 export async function GET(request: NextRequest) {
   const todos = request.nextUrl.searchParams.get("todos") === "1";
@@ -56,6 +57,8 @@ export async function POST(request: NextRequest) {
     destaque: destaque?.trim() || null,
     ordem: maxOrdem,
   });
+
+  garantirCategoria(categoria.trim());
 
   return NextResponse.json({ id }, { status: 201 });
 }

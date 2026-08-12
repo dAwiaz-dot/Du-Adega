@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
+import { garantirCategoria } from "@/lib/categorias";
 
 export async function PATCH(
   request: NextRequest,
@@ -28,6 +29,10 @@ export async function PATCH(
   }
 
   db.prepare(`UPDATE produtos SET ${campos.join(", ")} WHERE id = @id`).run(valores);
+
+  if (typeof body.categoria === "string" && body.categoria.trim()) {
+    garantirCategoria(body.categoria.trim());
+  }
 
   return NextResponse.json({ ok: true });
 }
