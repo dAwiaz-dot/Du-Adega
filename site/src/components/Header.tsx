@@ -24,7 +24,7 @@ export function Header() {
           href="https://wa.me/5535910034182"
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full bg-vermelho-vivo px-4 py-2 text-sm font-medium text-preto transition hover:brightness-95 active:scale-95"
+          className="rounded-full bg-vermelho-vivo px-4 py-2 text-sm font-medium text-preto transition hover:scale-105 hover:brightness-95 active:scale-95"
         >
           WhatsApp
         </a>

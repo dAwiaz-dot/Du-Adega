@@ -216,8 +216,12 @@ export function PedidoForm({
             href={linkWhatsApp}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-3 font-semibold text-white transition hover:brightness-95 active:scale-95"
+            className="relative mt-6 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-3 font-semibold text-white transition hover:scale-105 hover:brightness-95 hover:shadow-lg hover:shadow-[#25D366]/40 active:scale-95"
           >
+            <span
+              aria-hidden
+              className="absolute inset-0 -z-10 rounded-full bg-[#25D366]/60 animate-glow"
+            />
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 0C5.4 0 0 5.4 0 12c0 2.1.6 4.1 1.6 5.9L0 24l6.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S18.6 0 12 0zm0 22c-1.9 0-3.7-.5-5.3-1.5l-.4-.2-3.9 1 1-3.8-.2-.4C2.2 15.4 2 13.7 2 12 2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10zm5.6-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6-.1-.2-.7-1.8-1-2.4-.3-.6-.5-.5-.7-.6h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.3 5.2 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.3z" />
             </svg>
@@ -231,7 +235,7 @@ export function PedidoForm({
               setPedidoId(null);
               setLinkWhatsApp(null);
             }}
-            className="mt-4 rounded-full border border-borda px-6 py-2 font-medium text-foreground/70 transition hover:border-vermelho hover:text-vermelho active:scale-95"
+            className="mt-4 rounded-full border border-borda px-6 py-2 font-medium text-foreground/70 transition hover:scale-105 hover:border-vermelho hover:text-vermelho active:scale-95"
           >
             Fazer outro pedido
           </button>
@@ -325,7 +329,7 @@ export function PedidoForm({
                         <button
                           type="button"
                           onClick={() => alterarQuantidade(produto.id, -1)}
-                          className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition active:scale-90"
+                          className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
                         >
                           −
                         </button>
@@ -338,7 +342,7 @@ export function PedidoForm({
                         <button
                           type="button"
                           onClick={() => alterarQuantidade(produto.id, 1)}
-                          className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition active:scale-90"
+                          className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
                         >
                           +
                         </button>
@@ -407,18 +411,24 @@ export function PedidoForm({
       <button
         type="submit"
         disabled={enviando}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto transition hover:brightness-95 active:scale-[0.98] disabled:opacity-60"
+        className="group relative mt-4 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto transition hover:brightness-95 hover:shadow-lg hover:shadow-vermelho-vivo/30 active:scale-[0.98] disabled:opacity-60"
       >
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[130%] transition-transform duration-700 group-hover:translate-x-[130%]"
+        />
         {enviando && (
           <span className="h-4 w-4 animate-spin rounded-full border-2 border-preto/30 border-t-preto" />
         )}
-        {enviando ? "Enviando..." : "Confirmar pedido"}
+        <span className="relative">
+          {enviando ? "Enviando..." : "Confirmar pedido"}
+        </span>
       </button>
 
       {qtdTotalItens > 0 && (
         <a
           href="#checkout"
-          className="fixed inset-x-0 bottom-0 z-20 animate-slide-up border-t border-vermelho-vivo/40 bg-vermelho px-6 py-4 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition active:scale-[0.99]"
+          className="fixed inset-x-0 bottom-0 z-20 animate-slide-up border-t border-vermelho-vivo/40 bg-vermelho px-6 py-4 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:scale-[0.99]"
         >
           <div className="mx-auto flex max-w-5xl items-center justify-between">
             <span className="font-medium">
