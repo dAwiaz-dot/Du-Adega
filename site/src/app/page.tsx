@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PedidoForm } from "@/components/PedidoForm";
-import { WhatsAppFloat } from "@/components/WhatsAppFloat";
+import { SocialFloat } from "@/components/SocialFloat";
 
 export const metadata: Metadata = {
   title: "Du Bebidas — Peça destilados, vinhos e cerveja em Alfenas-MG",
@@ -85,7 +85,7 @@ export default function Home() {
       </main>
 
       <Footer />
-      <WhatsAppFloat />
+      <SocialFloat />
     </div>
   );
 }
