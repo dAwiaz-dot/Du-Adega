@@ -36,8 +36,11 @@ yarn-error.log*
 # vercel
 .vercel
 
-# banco local (pedidos)
+# banco local (pedidos) e arquivos de WAL do SQLite
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+/uploads/
 
 # typescript
 *.tsbuildinfo

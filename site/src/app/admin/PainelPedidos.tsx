@@ -1,8 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Pedido, PedidoItem } from "@/lib/db";
+import { AdminNav } from "./AdminNav";
 
 const STATUS_LABEL: Record<Pedido["status"], string> = {
   novo: "Novo",
@@ -161,7 +161,6 @@ export function PainelPedidos({
   pedidosIniciais: Pedido[];
   adminNome: string;
 }) {
-  const router = useRouter();
   const [pedidos, setPedidos] = useState(pedidosIniciais);
   const [aba, setAba] = useState<Pedido["status"] | "todos">("novo");
   const [busca, setBusca] = useState("");
@@ -247,11 +246,6 @@ export function PainelPedidos({
     }
   }
 
-  async function sair() {
-    await fetch("/api/admin/login", { method: "DELETE" });
-    router.refresh();
-  }
-
   const buscaNormalizada = busca.trim().toLowerCase();
   const pedidosFiltrados = (
     aba === "todos" ? pedidos : pedidos.filter((p) => p.status === aba)
@@ -272,33 +266,7 @@ export function PainelPedidos({
 
   return (
     <div className="min-h-screen bg-card">
-      <header className="bg-preto text-white">
-        <div className="mx-auto max-w-5xl px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">Painel de Pedidos — Du Bebidas</h1>
-            <p className="text-xs text-white/60">Logado como {adminNome}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <span
-              className="flex items-center gap-1.5 text-xs text-white/60"
-              title={conectado ? "Atualizando normalmente" : "Sem conexão com o servidor"}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  conectado ? "bg-green-400" : "bg-red-500 animate-pulse"
-                }`}
-              />
-              {conectado ? "Online" : "Sem conexão"}
-            </span>
-            <button
-              onClick={sair}
-              className="text-sm text-white/70 hover:text-white"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-      </header>
+      <AdminNav adminNome={adminNome} />
 
       <div className="bg-background border-b border-borda">
         <div className="mx-auto max-w-5xl px-6 py-4 flex flex-wrap items-center gap-6">
@@ -312,6 +280,17 @@ export function PainelPedidos({
             <p className="text-xs text-foreground/50">Pedidos em aberto</p>
             <p className="text-lg font-semibold">{pedidosEmAberto}</p>
           </div>
+          <span
+            className="flex items-center gap-1.5 text-xs text-foreground/50"
+            title={conectado ? "Atualizando normalmente" : "Sem conexão com o servidor"}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                conectado ? "bg-green-500" : "bg-red-500 animate-pulse"
+              }`}
+            />
+            {conectado ? "Online" : "Sem conexão"}
+          </span>
           <input
             type="search"
             placeholder="Buscar por nome ou telefone..."

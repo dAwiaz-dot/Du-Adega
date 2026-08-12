@@ -1,4 +1,11 @@
+import { cookies } from "next/headers";
+
 export type AdminUser = { nome: string; senha: string };
+
+export async function isAdminRequest(): Promise<boolean> {
+  const cookieStore = await cookies();
+  return cookieStore.get("adega_admin")?.value === "1";
+}
 
 export function getAdminUsers(): AdminUser[] {
   const lista = process.env.ADMIN_USERS?.trim();

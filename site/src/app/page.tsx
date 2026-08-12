@@ -4,6 +4,9 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PedidoForm } from "@/components/PedidoForm";
 import { SocialFloat } from "@/components/SocialFloat";
+import { listarProdutosAtivos } from "@/lib/produtos";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Du Bebidas — Peça destilados, vinhos e cerveja em Alfenas-MG",
@@ -20,6 +23,8 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
+  const produtos = listarProdutosAtivos();
+
   return (
     <div className="flex min-h-full flex-col">
       <Header />
@@ -84,7 +89,7 @@ export default function Home() {
         </section>
 
         <div className="mx-auto max-w-3xl px-6 pb-10">
-          <PedidoForm />
+          <PedidoForm produtosIniciais={produtos} />
         </div>
       </main>
 

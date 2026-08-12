@@ -2,11 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { produtos, categorias, categoriaIcone } from "@/data/produtos";
+import { categoriaIcone } from "@/data/produtos";
+import type { Produto } from "@/lib/db";
 
 type Carrinho = Record<string, number>;
 
-export function PedidoForm() {
+export function PedidoForm({ produtosIniciais }: { produtosIniciais: Produto[] }) {
+  const produtos = produtosIniciais;
+  const categorias = useMemo(
+    () => Array.from(new Set(produtos.map((p) => p.categoria))),
+    [produtos]
+  );
+
   const [carrinho, setCarrinho] = useState<Carrinho>({});
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
@@ -338,7 +345,7 @@ export function PedidoForm() {
           onChange={(e) => setEndereco(e.target.value)}
           className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
         />
-        <p className="mt-1.5 text-xs text-foreground/50">
+        <p className="mt-1.5 text-xs text-foreground/70">
           📍 Entregamos em Alfenas-MG e região.
         </p>
         <textarea
@@ -356,7 +363,7 @@ export function PedidoForm() {
           R$ {total.toFixed(2)}
         </span>
       </div>
-      <p className="mt-2 text-center text-xs text-foreground/50">
+      <p className="mt-2 text-center text-xs text-foreground/70">
         💳 Forma de pagamento combinada direto com a loja na entrega.
       </p>
 
