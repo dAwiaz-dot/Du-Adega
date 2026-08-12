@@ -45,6 +45,27 @@ function tocarAlerta() {
   }
 }
 
+const MENSAGEM_STATUS: Record<Pedido["status"], (pedido: Pedido) => string> = {
+  novo: (p) =>
+    `Oi ${p.cliente_nome}! Recebemos seu pedido #${p.id} aqui na Du Bebidas. 🍻`,
+  preparando: (p) =>
+    `Oi ${p.cliente_nome}! Seu pedido #${p.id} já está sendo separado por aqui.`,
+  a_caminho: (p) =>
+    `Seu pedido #${p.id} saiu pra entrega! 🛵 Chega logo aí.`,
+  entregue: (p) =>
+    `Pedido #${p.id} entregue! Valeu pela preferência 🙌 Qualquer coisa é só chamar.`,
+  cancelado: (p) =>
+    `Oi ${p.cliente_nome}, seu pedido #${p.id} foi cancelado. Qualquer dúvida chama a gente por aqui.`,
+};
+
+function linkWhatsAppPedido(pedido: Pedido) {
+  const digitos = pedido.cliente_telefone.replace(/\D/g, "");
+  const numero =
+    digitos.length <= 11 ? `55${digitos}` : digitos;
+  const mensagem = MENSAGEM_STATUS[pedido.status](pedido);
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+}
+
 function hojeStr() {
   const agora = new Date();
   const ano = agora.getFullYear();
@@ -313,6 +334,18 @@ export function PainelPedidos({
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    <a
+                      href={linkWhatsAppPedido(pedido)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Avisar cliente no WhatsApp"
+                      className="flex items-center gap-1.5 rounded-md bg-[#25D366] px-3 py-2 text-sm font-medium text-white transition hover:brightness-95"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 0C5.4 0 0 5.4 0 12c0 2.1.6 4.1 1.6 5.9L0 24l6.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S18.6 0 12 0zm0 22c-1.9 0-3.7-.5-5.3-1.5l-.4-.2-3.9 1 1-3.8-.2-.4C2.2 15.4 2 13.7 2 12 2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10zm5.6-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6-.1-.2-.7-1.8-1-2.4-.3-.6-.5-.5-.7-.6h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.3 5.2 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.3z" />
+                      </svg>
+                      Avisar
+                    </a>
                     <button
                       onClick={() => imprimirPedido(pedido)}
                       className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
