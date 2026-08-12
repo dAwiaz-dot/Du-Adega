@@ -23,6 +23,7 @@ export const produtos: Produto[] = [
     categoria: "Vinhos",
     descricao: "Corpo encorpado, notas de frutas vermelhas e carvalho.",
     preco: 89.9,
+    imagem: "/produtos/vinho-tinto-reserva.webp",
   },
   {
     id: "vinho-branco-seco",
@@ -30,6 +31,7 @@ export const produtos: Produto[] = [
     categoria: "Vinhos",
     descricao: "Leve e refrescante, ideal para petiscos e frutos do mar.",
     preco: 69.9,
+    imagem: "/produtos/vinho-branco-seco.webp",
   },
   {
     id: "cerveja-long-neck",
@@ -37,6 +39,7 @@ export const produtos: Produto[] = [
     categoria: "Cervejas",
     descricao: "Geladinha, pronta pra entrega.",
     preco: 8.9,
+    imagem: "/produtos/cerveja-long-neck.webp",
   },
   {
     id: "cerveja-lata-fardo",
@@ -44,6 +47,7 @@ export const produtos: Produto[] = [
     categoria: "Cervejas",
     descricao: "Fardo fechado, ideal pra churrasco e reunião com amigos.",
     preco: 79.9,
+    imagem: "/produtos/cerveja-lata-fardo.webp",
   },
   {
     id: "whisky-12-anos",

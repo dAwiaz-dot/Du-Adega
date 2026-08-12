@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { produtos, categorias, categoriaIcone } from "@/data/produtos";
 
 type Carrinho = Record<string, number>;
@@ -210,8 +211,18 @@ export function PedidoForm() {
                         quantidade > 0 ? "border-vermelho" : "border-borda"
                       }`}
                     >
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-preto text-2xl">
-                        {categoriaIcone[categoria] ?? "🍹"}
+                      <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
+                        {produto.imagem ? (
+                          <Image
+                            src={produto.imagem}
+                            alt={produto.nome}
+                            fill
+                            sizes="56px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          categoriaIcone[categoria] ?? "🍹"
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{produto.nome}</p>
