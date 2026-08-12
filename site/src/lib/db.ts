@@ -1,7 +1,10 @@
 import Database from "better-sqlite3";
+import fs from "fs";
 import path from "path";
 
-const dbPath = path.join(process.cwd(), "pedidos.sqlite3");
+const dbPath = process.env.DB_PATH ?? path.join(process.cwd(), "pedidos.sqlite3");
+
+fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
 const globalForDb = globalThis as unknown as { db?: Database.Database };
 

@@ -42,15 +42,35 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
   validar o fluxo. Substituir pelos produtos reais da adega antes de ir
   pro ar.
 - **Stack:** Next.js 16 (App Router) + Tailwind v4 + `better-sqlite3` como
-  banco local (`site/pedidos.sqlite3`, ignorado no git). Funciona bem em
-  ambiente com filesystem persistente; se o deploy final for em Vercel
-  (serverless, filesystem efêmero), vai ser necessário trocar por um banco
-  externo (Supabase/Turso/Postgres) antes de publicar — o código já isola
-  o acesso ao banco em `site/src/lib/db.ts`, então a troca é localizada.
-- **Login do admin:** senha única via `ADMIN_PASSWORD` em `.env.local`
-  (não commitado). Cookie httpOnly `adega_admin`. Sem multiusuário —
-  suficiente pro MVP, mas não é autenticação robusta.
+  banco (`site/src/lib/db.ts`). Caminho do arquivo configurável via
+  `DB_PATH` (padrão `./pedidos.sqlite3` se não definida).
+- **Login do admin:** via `ADMIN_USERS` em `.env.local` (não commitado),
+  formato `Nome:senha,Nome2:senha2` — suporta múltiplos usuários. Cookie
+  httpOnly `adega_admin`. Sem hash de senha — suficiente pro MVP, mas não
+  é autenticação robusta.
 - **Rotas:**
   - `/` — landing page
   - `/pedido` — pedido do cliente (carrinho simples, sem login)
   - `/admin` — painel de pedidos (protegido por senha)
+
+## Deploy (Railway)
+
+Decidido: hospedagem no Railway. Diferente da Vercel (serverless), o
+Railway roda um container persistente — então dá pra manter o SQLite
+como está, sem trocar de banco, desde que use um **volume persistente**.
+
+Passo a passo:
+
+1. Criar projeto no Railway a partir do repo
+   [dAwiaz-dot/Du-Adega](https://github.com/dAwiaz-dot/Du-Adega), apontando
+   o root directory pra `site/` (o repo tem `CLAUDE.md`/`briefing.md` na
+   raiz, o app Next.js fica em `site/`).
+2. Adicionar um **volume** montado em `/data` no serviço.
+3. Configurar variáveis de ambiente:
+   - `ADMIN_USERS=Nome:senha` (login do painel admin)
+   - `DB_PATH=/data/pedidos.sqlite3` (persiste entre deploys, graças ao volume)
+4. Build/start são automáticos via `railway.json` (Nixpacks + `npm run
+   start`, que já respeita a porta que o Railway injeta em `$PORT`).
+5. Testado localmente simulando o ambiente (`PORT` e `DB_PATH` customizados)
+   antes de subir — build e start funcionam sem alteração de código além
+   da configuração de env vars.
