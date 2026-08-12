@@ -12,10 +12,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://dubebidas.up.railway.app";
+
 export const metadata: Metadata = {
-  title: "Du Bebidas | Alfenas-MG — Aberto 24h",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Du Bebidas | Alfenas-MG — Aberto 24h",
+    template: "%s | Du Bebidas",
+  },
   description:
     "Destilados, vinhos e cerveja gelada, gelo, carvão e refrigerante com entrega em Alfenas-MG. Aberto 24 horas. Faça seu pedido online.",
+  keywords: [
+    "adega Alfenas",
+    "bebidas Alfenas MG",
+    "cerveja delivery Alfenas",
+    "destilados Alfenas",
+    "vinhos Alfenas",
+    "gelo e carvão Alfenas",
+    "entrega de bebidas 24 horas",
+    "Du Bebidas",
+  ],
+  authors: [{ name: "Du Bebidas" }],
+  openGraph: {
+    title: "Du Bebidas | Alfenas-MG — Aberto 24h",
+    description:
+      "Destilados, vinhos e cerveja gelada, com entrega em Alfenas-MG. Aberto 24 horas.",
+    url: siteUrl,
+    siteName: "Du Bebidas",
+    locale: "pt_BR",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

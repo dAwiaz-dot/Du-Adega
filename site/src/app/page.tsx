@@ -1,8 +1,22 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { produtos, categorias, categoriaIcone } from "@/data/produtos";
+
+export const metadata: Metadata = {
+  title: "Du Bebidas — Destilados, Vinhos e Cerveja em Alfenas-MG",
+  description:
+    "Adega e conveniência de bebidas em Alfenas-MG, aberta 24 horas. Destilados, vinhos, cerveja gelada, gelo, carvão e refrigerante com entrega rápida.",
+  keywords: [
+    "adega Alfenas MG",
+    "conveniência de bebidas 24h",
+    "cerveja gelada delivery",
+    "vinhos Alfenas",
+    "destilados Alfenas",
+  ],
+};
 
 export default function Home() {
   return (
@@ -81,7 +95,7 @@ export default function Home() {
           <div className="mx-auto max-w-5xl px-6 py-14">
             <div className="flex items-baseline justify-between">
               <h2 className="text-2xl font-semibold text-preto">Cardápio</h2>
-              <p className="text-sm text-foreground/50">
+              <p className="text-sm text-foreground/70">
                 Catálogo provisório — em breve com fotos e produtos reais.
               </p>
             </div>

@@ -1,0 +1,17 @@
+# Du Bebidas
+
+> Adega e conveniência de bebidas em Alfenas-MG, aberta 24 horas (segunda até às 13h).
+
+Endereço: Alameda das Acácias, 530 — Alfenas-MG
+Contato: (35) 91003-4182
+Instagram: https://www.instagram.com/du_bebidas.26/
+
+## Produtos
+Destilados (whisky, gin, vodka), vinhos, cerveja, gelo, carvão, água e refrigerante — entrega rápida em Alfenas-MG.
+
+## Páginas
+- /: apresentação da loja, horário de funcionamento e cardápio em destaque
+- /pedido: pedido online com carrinho, escolha de produtos e dados de entrega
+
+## Observações
+Pagamento combinado na entrega. Site voltado a pedidos locais em Alfenas-MG, sem entrega para outras cidades.

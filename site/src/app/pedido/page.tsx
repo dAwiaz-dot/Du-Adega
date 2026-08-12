@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PedidoForm } from "./PedidoForm";
+
+export const metadata: Metadata = {
+  title: "Faça seu pedido",
+  description:
+    "Monte seu pedido de bebidas — vinhos, cerveja, destilados, gelo e refrigerante — e receba em casa em Alfenas-MG. Entrega rápida, 24 horas.",
+  keywords: [
+    "pedido de bebidas online Alfenas",
+    "delivery de cerveja Alfenas",
+    "comprar bebidas 24h",
+  ],
+};
 
 export default function PedidoPage() {
   return (

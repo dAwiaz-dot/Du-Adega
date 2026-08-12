@@ -126,10 +126,10 @@ export function PedidoForm() {
       <div className="mt-8">
         {categorias.map((categoria) => (
           <div key={categoria} id={`p-${categoria}`} className="mb-8 scroll-mt-32">
-            <h3 className="flex items-center gap-2 text-vermelho-vivo font-semibold uppercase tracking-wide text-sm">
+            <h2 className="flex items-center gap-2 text-vermelho font-semibold uppercase tracking-wide text-sm">
               <span>{categoriaIcone[categoria] ?? "🍹"}</span>
               {categoria}
-            </h3>
+            </h2>
             <div className="mt-3 space-y-3">
               {produtos
                 .filter((p) => p.categoria === categoria)
@@ -179,7 +179,7 @@ export function PedidoForm() {
       </div>
 
       <div id="checkout" className="scroll-mt-32 rounded-lg border border-borda bg-background p-6">
-        <h3 className="font-semibold text-preto">Seus dados</h3>
+        <h2 className="font-semibold text-preto">Seus dados</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <input
             required
