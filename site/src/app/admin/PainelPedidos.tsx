@@ -164,6 +164,9 @@ export function PainelPedidos({
   const router = useRouter();
   const [pedidos, setPedidos] = useState(pedidosIniciais);
   const [aba, setAba] = useState<Pedido["status"] | "todos">("novo");
+  const [busca, setBusca] = useState("");
+  const [conectado, setConectado] = useState(true);
+  const [erroStatus, setErroStatus] = useState<string | null>(null);
   const emVooRef = useRef(false);
   const idsConhecidosRef = useRef<Set<number>>(
     new Set(pedidosIniciais.map((p) => p.id))
@@ -187,7 +190,12 @@ export function PainelPedidos({
           if (temPedidoNovo) tocarAlerta();
 
           setPedidos(novosPedidos);
+          setConectado(true);
+        } else {
+          setConectado(false);
         }
+      } catch {
+        setConectado(false);
       } finally {
         emVooRef.current = false;
       }
@@ -211,15 +219,32 @@ export function PainelPedidos({
       if (!confirmar) return;
     }
 
+    const statusAnterior = pedidos.find((p) => p.id === id)?.status;
+    setErroStatus(null);
     setPedidos((atual) =>
       atual.map((p) => (p.id === id ? { ...p, status } : p))
     );
 
-    await fetch(`/api/pedidos/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
+    try {
+      const res = await fetch(`/api/pedidos/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+
+      if (!res.ok) throw new Error();
+      setConectado(true);
+    } catch {
+      setConectado(false);
+      setErroStatus(
+        `Não deu pra salvar o status do pedido #${id}. Confira a conexão e tente de novo.`
+      );
+      if (statusAnterior) {
+        setPedidos((atual) =>
+          atual.map((p) => (p.id === id ? { ...p, status: statusAnterior } : p))
+        );
+      }
+    }
   }
 
   async function sair() {
@@ -227,8 +252,15 @@ export function PainelPedidos({
     router.refresh();
   }
 
-  const pedidosFiltrados =
-    aba === "todos" ? pedidos : pedidos.filter((p) => p.status === aba);
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const pedidosFiltrados = (
+    aba === "todos" ? pedidos : pedidos.filter((p) => p.status === aba)
+  ).filter(
+    (p) =>
+      !buscaNormalizada ||
+      p.cliente_nome.toLowerCase().includes(buscaNormalizada) ||
+      p.cliente_telefone.replace(/\D/g, "").includes(buscaNormalizada.replace(/\D/g, ""))
+  );
 
   const faturamentoHoje = pedidos
     .filter((p) => p.criado_em.startsWith(hojeStr()) && p.status !== "cancelado")
@@ -246,17 +278,30 @@ export function PainelPedidos({
             <h1 className="text-lg font-semibold">Painel de Pedidos — Du Bebidas</h1>
             <p className="text-xs text-white/60">Logado como {adminNome}</p>
           </div>
-          <button
-            onClick={sair}
-            className="text-sm text-white/70 hover:text-white"
-          >
-            Sair
-          </button>
+          <div className="flex items-center gap-4">
+            <span
+              className="flex items-center gap-1.5 text-xs text-white/60"
+              title={conectado ? "Atualizando normalmente" : "Sem conexão com o servidor"}
+            >
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  conectado ? "bg-green-400" : "bg-red-500 animate-pulse"
+                }`}
+              />
+              {conectado ? "Online" : "Sem conexão"}
+            </span>
+            <button
+              onClick={sair}
+              className="text-sm text-white/70 hover:text-white"
+            >
+              Sair
+            </button>
+          </div>
         </div>
       </header>
 
       <div className="bg-background border-b border-borda">
-        <div className="mx-auto max-w-5xl px-6 py-4 flex flex-wrap gap-6">
+        <div className="mx-auto max-w-5xl px-6 py-4 flex flex-wrap items-center gap-6">
           <div>
             <p className="text-xs text-foreground/50">Faturamento de hoje</p>
             <p className="text-lg font-semibold text-vermelho">
@@ -267,7 +312,21 @@ export function PainelPedidos({
             <p className="text-xs text-foreground/50">Pedidos em aberto</p>
             <p className="text-lg font-semibold">{pedidosEmAberto}</p>
           </div>
+          <input
+            type="search"
+            placeholder="Buscar por nome ou telefone..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="ml-auto w-full max-w-xs rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+          />
         </div>
+        {erroStatus && (
+          <div className="mx-auto max-w-5xl px-6 pb-4">
+            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              ⚠️ {erroStatus}
+            </p>
+          </div>
+        )}
       </div>
 
       <nav className="border-b border-borda bg-background">

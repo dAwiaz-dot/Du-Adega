@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 8,
+    maxAge: 60 * 60 * 48,
   };
 
   response.cookies.set("adega_admin", "1", cookieOpts);
