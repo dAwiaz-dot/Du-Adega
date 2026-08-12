@@ -78,6 +78,23 @@ export function PedidoForm({
   }, []);
 
   useEffect(() => {
+    const alvos = document.querySelectorAll<HTMLElement>("[data-reveal]");
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("is-visible");
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+    );
+    alvos.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     chipRefs.current[categoriaAtiva]?.scrollIntoView({
       behavior: "smooth",
       inline: "center",
@@ -268,8 +285,9 @@ export function PedidoForm({
                   return (
                     <div
                       key={produto.id}
-                      style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}
-                      className={`flex animate-fade-up items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                      data-reveal
+                      style={{ transitionDelay: `${Math.min(index, 6) * 60}ms` }}
+                      className={`group reveal flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                         quantidade > 0 ? "border-vermelho" : "border-borda"
                       }`}
                     >
@@ -280,7 +298,7 @@ export function PedidoForm({
                             alt={produto.nome}
                             fill
                             sizes="56px"
-                            className="object-cover"
+                            className="object-cover transition-transform duration-300 group-hover:scale-110"
                           />
                         ) : (
                           categoriaIcone[categoria] ?? "🍹"
@@ -333,7 +351,11 @@ export function PedidoForm({
         ))}
       </div>
 
-      <div id="checkout" className="scroll-mt-32 rounded-lg border border-borda bg-background p-6">
+      <div
+        id="checkout"
+        data-reveal
+        className="reveal scroll-mt-32 rounded-lg border border-borda bg-background p-6"
+      >
         <h2 className="font-semibold text-preto">Seus dados</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <input
