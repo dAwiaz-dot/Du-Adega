@@ -338,6 +338,9 @@ export function PedidoForm() {
           onChange={(e) => setEndereco(e.target.value)}
           className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
         />
+        <p className="mt-1.5 text-xs text-foreground/50">
+          📍 Entregamos em Alfenas-MG e região.
+        </p>
         <textarea
           placeholder="Observações (opcional)"
           value={observacoes}
@@ -353,6 +356,9 @@ export function PedidoForm() {
           R$ {total.toFixed(2)}
         </span>
       </div>
+      <p className="mt-2 text-center text-xs text-foreground/50">
+        💳 Forma de pagamento combinada direto com a loja na entrega.
+      </p>
 
       {erro && <p className="mt-4 animate-fade-up text-red-600 text-sm">{erro}</p>}
 
