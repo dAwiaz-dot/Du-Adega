@@ -23,7 +23,8 @@ export function AdminLogin() {
     setCarregando(false);
 
     if (!res.ok) {
-      setErro("Senha incorreta.");
+      const data = await res.json().catch(() => null);
+      setErro(data?.error ?? "Senha incorreta.");
       return;
     }
 

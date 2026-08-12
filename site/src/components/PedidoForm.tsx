@@ -15,6 +15,7 @@ export function PedidoForm() {
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [pedidoId, setPedidoId] = useState<number | null>(null);
+  const [linkWhatsApp, setLinkWhatsApp] = useState<string | null>(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState(categorias[0]);
   const chipRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
 
@@ -102,7 +103,26 @@ export function PedidoForm() {
         return;
       }
 
+      const linhas = itensCarrinho
+        .map((item) => `${item.quantidade}x ${item.nome}`)
+        .join("\n");
+      const mensagem = [
+        `Pedido #${data.id} — Du Bebidas`,
+        "",
+        linhas,
+        "",
+        `Total: R$ ${total.toFixed(2)}`,
+        `Nome: ${clienteNome}`,
+        `Endereço: ${endereco}`,
+        observacoes ? `Obs: ${observacoes}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
       setPedidoId(data.id);
+      setLinkWhatsApp(
+        `https://wa.me/5535910034182?text=${encodeURIComponent(mensagem)}`
+      );
       setCarrinho({});
       setClienteNome("");
       setClienteTelefone("");
@@ -150,14 +170,35 @@ export function PedidoForm() {
           Pedido #{pedidoId} recebido!
         </h2>
         <p className="mt-2 text-foreground/70">
-          Vamos confirmar com você por telefone em instantes.
+          Falta um passo: confirma o pedido no WhatsApp pra gente já
+          separar tudo.
         </p>
-        <button
-          onClick={() => setPedidoId(null)}
-          className="mt-6 rounded-full bg-vermelho px-6 py-2 font-medium text-white transition hover:brightness-110 active:scale-95"
-        >
-          Fazer outro pedido
-        </button>
+
+        {linkWhatsApp && (
+          <a
+            href={linkWhatsApp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-3 font-semibold text-white transition hover:brightness-95 active:scale-95"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 2.1.6 4.1 1.6 5.9L0 24l6.3-1.6c1.7.9 3.6 1.4 5.7 1.4 6.6 0 12-5.4 12-12S18.6 0 12 0zm0 22c-1.9 0-3.7-.5-5.3-1.5l-.4-.2-3.9 1 1-3.8-.2-.4C2.2 15.4 2 13.7 2 12 2 6.5 6.5 2 12 2s10 4.5 10 10-4.5 10-10 10zm5.6-7.4c-.3-.2-1.8-.9-2.1-1-.3-.1-.5-.2-.7.2-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.2-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.2-.2.2-.3.3-.5.1-.2 0-.4 0-.6-.1-.2-.7-1.8-1-2.4-.3-.6-.5-.5-.7-.6h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.3 5.2 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.3-.7.3-1.3.2-1.4-.1-.1-.3-.2-.6-.3z" />
+            </svg>
+            Confirmar no WhatsApp
+          </a>
+        )}
+
+        <div>
+          <button
+            onClick={() => {
+              setPedidoId(null);
+              setLinkWhatsApp(null);
+            }}
+            className="mt-4 rounded-full border border-borda px-6 py-2 font-medium text-foreground/70 transition hover:border-vermelho hover:text-vermelho active:scale-95"
+          >
+            Fazer outro pedido
+          </button>
+        </div>
       </div>
     );
   }
