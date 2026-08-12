@@ -14,7 +14,7 @@ export function Header() {
             className="rounded-full transition-transform duration-300 group-hover:scale-105"
           />
           <div className="leading-tight">
-            <p className="text-lg font-semibold tracking-wide">
+            <p className="font-display text-2xl tracking-wide">
               Du <span className="text-vermelho-vivo">Bebidas</span>
             </p>
             <p className="text-[11px] text-white/50">Alfenas-MG · aberto 24h</p>

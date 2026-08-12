@@ -243,12 +243,13 @@ export function PedidoForm() {
             <div className="mt-3 space-y-3">
               {produtos
                 .filter((p) => p.categoria === categoria)
-                .map((produto) => {
+                .map((produto, index) => {
                   const quantidade = carrinho[produto.id] ?? 0;
                   return (
                     <div
                       key={produto.id}
-                      className={`flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                      style={{ animationDelay: `${Math.min(index, 6) * 60}ms` }}
+                      className={`flex animate-fade-up items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                         quantidade > 0 ? "border-vermelho" : "border-borda"
                       }`}
                     >
@@ -264,9 +265,20 @@ export function PedidoForm() {
                         ) : (
                           categoriaIcone[categoria] ?? "🍹"
                         )}
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{produto.nome}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="font-medium">{produto.nome}</p>
+                          {produto.destaque && (
+                            <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
+                              {produto.destaque}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-foreground/60">
                           R$ {produto.preco.toFixed(2)}
                         </p>

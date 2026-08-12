@@ -28,6 +28,10 @@ export default function Home() {
         <section className="relative overflow-hidden bg-preto text-white">
           <div
             aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:radial-gradient(currentColor_1px,transparent_1px)] [background-size:18px_18px]"
+          />
+          <div
+            aria-hidden
             className="pointer-events-none absolute left-1/2 top-0 h-72 w-72 -translate-x-1/2 -translate-y-1/3 rounded-full bg-vermelho/30 blur-3xl animate-glow"
           />
 
@@ -47,7 +51,7 @@ export default function Home() {
                 />
               </div>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-semibold animate-fade-up [animation-delay:80ms]">
+            <h1 className="font-display text-4xl sm:text-5xl tracking-wide animate-fade-up [animation-delay:80ms]">
               Faça seu pedido
             </h1>
             <p className="mt-2 text-white/70 text-sm animate-fade-up [animation-delay:160ms]">
