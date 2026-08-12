@@ -1,0 +1,57 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#1a1a1a" />
+      <stop offset="100%" stop-color="#050505" />
+    </radialGradient>
+    <linearGradient id="redGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff3b4e" />
+      <stop offset="100%" stop-color="#c8102e" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="100" cy="100" r="98" fill="url(#bg)" stroke="#c8102e" stroke-width="3" />
+
+  <g opacity="0.35" stroke="#f5f5f0" stroke-width="1.4" fill="none">
+    <rect x="52" y="118" width="10" height="34" rx="2" />
+    <rect x="55" y="108" width="4" height="12" />
+    <rect x="66" y="112" width="10" height="40" rx="2" />
+    <rect x="69" y="100" width="4" height="14" />
+    <rect x="122" y="114" width="10" height="38" rx="2" />
+    <rect x="125" y="102" width="4" height="14" />
+    <rect x="136" y="120" width="10" height="32" rx="2" />
+    <rect x="139" y="110" width="4" height="12" />
+  </g>
+
+  <text
+    x="100"
+    y="94"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-weight="700"
+    font-style="italic"
+    font-size="56"
+    fill="url(#redGrad)"
+  >Du</text>
+
+  <text
+    x="100"
+    y="122"
+    text-anchor="middle"
+    font-family="'Brush Script MT', 'Segoe Script', cursive"
+    font-style="italic"
+    font-size="26"
+    fill="#f5f5f0"
+  >bebidas</text>
+
+  <text
+    x="100"
+    y="142"
+    text-anchor="middle"
+    font-family="Arial, Helvetica, sans-serif"
+    font-weight="600"
+    font-size="9"
+    letter-spacing="2.5"
+    fill="#ff3b4e"
+  >ALFENAS · 24H</text>
+</svg>

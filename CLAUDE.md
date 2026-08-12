@@ -38,9 +38,24 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
   Logo em alta resolução ainda não recebida — só temos os prints de baixa
   qualidade enviados pelo cliente.
 - **Catálogo de produtos é fictício.** `site/src/data/produtos.ts` tem
-  produtos de exemplo (vinhos, espumantes, cervejas, destilados) só pra
-  validar o fluxo. Substituir pelos produtos reais da adega antes de ir
-  pro ar.
+  produtos de exemplo (vinhos, cervejas, destilados, gelo/carvão,
+  água/refrigerante) só pra validar o fluxo. Substituir pelos produtos
+  reais da adega antes de ir pro ar. Cada produto tem campo opcional
+  `imagem` — ainda não usado (cards mostram emoji da categoria via
+  `categoriaIcone`); trocar por foto real assim que tiver.
+- **Logo recriada, não é a original.** `site/public/logo-du-bebidas.svg`
+  foi desenhada do zero a partir dos prints (placa da loja + foto de
+  perfil do Instagram), não é o arquivo oficial do cliente. Trocar se ele
+  mandar a logo em alta resolução.
+- **Layout estilo delivery (iFood/Zé Delivery):** header sticky com logo,
+  chips de categoria com scroll horizontal e âncoras, cards de produto com
+  thumbnail, carrinho flutuante fixo no rodapé da página `/pedido` quando
+  há itens selecionados.
+- **Fotos reais pendentes.** Pasta `site/public/fotos-instagram/` criada
+  pra receber fotos baixadas manualmente do Instagram (@du_bebidas.26) —
+  não é possível fazer scraping automático das imagens de lá (perfil
+  exige login pra servir imagens). Quando o cliente/agência colocar fotos
+  ali, trocar os ícones de categoria nos cards por elas.
 - **Stack:** Next.js 16 (App Router) + Tailwind v4 + `better-sqlite3` como
   banco (`site/src/lib/db.ts`). Caminho do arquivo configurável via
   `DB_PATH` (padrão `./pedidos.sqlite3` se não definida).

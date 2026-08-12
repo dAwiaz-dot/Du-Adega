@@ -5,6 +5,15 @@ export type Produto = {
   categoria: string;
   descricao: string;
   preco: number;
+  imagem?: string;
+};
+
+export const categoriaIcone: Record<string, string> = {
+  Vinhos: "🍷",
+  Cervejas: "🍺",
+  Destilados: "🥃",
+  "Gelo e Carvão": "🧊",
+  "Água e Refrigerante": "🥤",
 };
 
 export const produtos: Produto[] = [

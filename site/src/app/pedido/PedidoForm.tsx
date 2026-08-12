@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { produtos, categorias } from "@/data/produtos";
+import { produtos, categorias, categoriaIcone } from "@/data/produtos";
 
 type Carrinho = Record<string, number>;
 
@@ -101,12 +101,33 @@ export function PedidoForm() {
     );
   }
 
+  const qtdTotalItens = itensCarrinho.reduce((s, i) => s + i.quantidade, 0);
+
   return (
-    <form onSubmit={enviarPedido} className="mt-10 space-y-10">
-      <div>
+    <form onSubmit={enviarPedido} className={qtdTotalItens > 0 ? "pb-28" : ""}>
+      <nav
+        aria-label="Categorias"
+        className="sticky top-[64px] z-10 -mx-6 overflow-x-auto border-b border-borda bg-card px-6 py-3"
+      >
+        <div className="flex gap-2">
+          {categorias.map((categoria) => (
+            <a
+              key={categoria}
+              href={`#p-${categoria}`}
+              className="flex shrink-0 items-center gap-2 rounded-full border border-borda px-4 py-1.5 text-sm font-medium hover:border-vermelho hover:text-vermelho transition"
+            >
+              <span>{categoriaIcone[categoria] ?? "🍹"}</span>
+              {categoria}
+            </a>
+          ))}
+        </div>
+      </nav>
+
+      <div className="mt-8">
         {categorias.map((categoria) => (
-          <div key={categoria} className="mb-8">
-            <h3 className="text-vermelho-vivo font-semibold uppercase tracking-wide text-sm">
+          <div key={categoria} id={`p-${categoria}`} className="mb-8 scroll-mt-32">
+            <h3 className="flex items-center gap-2 text-vermelho-vivo font-semibold uppercase tracking-wide text-sm">
+              <span>{categoriaIcone[categoria] ?? "🍹"}</span>
               {categoria}
             </h3>
             <div className="mt-3 space-y-3">
@@ -117,10 +138,17 @@ export function PedidoForm() {
                   return (
                     <div
                       key={produto.id}
-                      className="flex items-center justify-between rounded-lg border border-borda bg-background p-4"
+                      className={`flex items-center gap-4 rounded-lg border p-4 transition ${
+                        quantidade > 0
+                          ? "border-vermelho bg-background"
+                          : "border-borda bg-background"
+                      }`}
                     >
-                      <div>
-                        <p className="font-medium">{produto.nome}</p>
+                      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-preto text-2xl">
+                        {categoriaIcone[categoria] ?? "🍹"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{produto.nome}</p>
                         <p className="text-sm text-foreground/60">
                           R$ {produto.preco.toFixed(2)}
                         </p>
@@ -150,7 +178,7 @@ export function PedidoForm() {
         ))}
       </div>
 
-      <div className="rounded-lg border border-borda bg-background p-6">
+      <div id="checkout" className="scroll-mt-32 rounded-lg border border-borda bg-background p-6">
         <h3 className="font-semibold text-preto">Seus dados</h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <input
@@ -184,22 +212,38 @@ export function PedidoForm() {
         />
       </div>
 
-      <div className="flex items-center justify-between rounded-lg bg-preto px-6 py-4 text-white">
+      <div className="mt-6 flex items-center justify-between rounded-lg bg-preto px-6 py-4 text-white">
         <span className="font-semibold">Total</span>
         <span className="text-xl font-semibold text-vermelho-vivo">
           R$ {total.toFixed(2)}
         </span>
       </div>
 
-      {erro && <p className="text-red-600 text-sm">{erro}</p>}
+      {erro && <p className="mt-4 text-red-600 text-sm">{erro}</p>}
 
       <button
         type="submit"
         disabled={enviando}
-        className="w-full rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto hover:brightness-95 transition disabled:opacity-60"
+        className="mt-4 w-full rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto hover:brightness-95 transition disabled:opacity-60"
       >
         {enviando ? "Enviando..." : "Confirmar pedido"}
       </button>
+
+      {qtdTotalItens > 0 && (
+        <a
+          href="#checkout"
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-vermelho-vivo/40 bg-vermelho px-6 py-4 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.3)]"
+        >
+          <div className="mx-auto flex max-w-5xl items-center justify-between">
+            <span className="font-medium">
+              {qtdTotalItens} {qtdTotalItens === 1 ? "item" : "itens"} no carrinho
+            </span>
+            <span className="rounded-full bg-white/15 px-4 py-1.5 font-semibold">
+              R$ {total.toFixed(2)} · Finalizar
+            </span>
+          </div>
+        </a>
+      )}
     </form>
   );
 }
