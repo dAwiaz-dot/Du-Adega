@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import type { Produto, Categoria, Caixa } from "@/lib/db";
@@ -45,6 +45,11 @@ export function PDV({
 
   const [categoriaAtiva, setCategoriaAtiva] = useState<string | "todas">("todas");
   const [carrinho, setCarrinho] = useState<Carrinho>({});
+  const [codigoBarras, setCodigoBarras] = useState("");
+  const [avisoLeitor, setAvisoLeitor] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(
+    null
+  );
+  const inputLeitorRef = useRef<HTMLInputElement>(null);
   const [formaPagamento, setFormaPagamento] = useState<(typeof FORMAS_PAGAMENTO)[number]>("Dinheiro");
   const [finalizando, setFinalizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -85,6 +90,34 @@ export function PDV({
       const novaQtd = Math.max(0, atualQtd + delta);
       return { ...atual, [id]: novaQtd };
     });
+  }
+
+  useEffect(() => {
+    if (caixa) inputLeitorRef.current?.focus();
+  }, [caixa]);
+
+  useEffect(() => {
+    if (!avisoLeitor) return;
+    const timer = setTimeout(() => setAvisoLeitor(null), 2000);
+    return () => clearTimeout(timer);
+  }, [avisoLeitor]);
+
+  function processarCodigoBarras() {
+    const codigo = codigoBarras.trim();
+    setCodigoBarras("");
+    if (!codigo) return;
+
+    const produto = produtos.find((p) => p.codigo_barras?.trim() === codigo);
+    if (!produto) {
+      setAvisoLeitor({ tipo: "erro", texto: `Nenhum produto com o código ${codigo}` });
+      return;
+    }
+    if (produto.estoque !== null && produto.estoque <= 0) {
+      setAvisoLeitor({ tipo: "erro", texto: `${produto.nome} está sem estoque` });
+      return;
+    }
+    alterarQuantidade(produto.id, 1);
+    setAvisoLeitor({ tipo: "ok", texto: `${produto.nome} adicionado` });
   }
 
   async function abrirCaixa(e: React.FormEvent) {
@@ -291,6 +324,36 @@ export function PDV({
         <main className="mx-auto max-w-6xl px-6 py-8">
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
             <div>
+              <div className="relative mb-4">
+                <input
+                  ref={inputLeitorRef}
+                  value={codigoBarras}
+                  onChange={(e) => setCodigoBarras(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      processarCodigoBarras();
+                    }
+                  }}
+                  onBlur={() => {
+                    if (painelFechamento) return;
+                    setTimeout(() => inputLeitorRef.current?.focus(), 200);
+                  }}
+                  placeholder="📷 Bipar código de barras..."
+                  autoFocus
+                  className="w-full rounded-lg border-2 border-dashed border-borda bg-background px-4 py-3 text-center transition focus:border-vermelho focus:outline-none"
+                />
+                {avisoLeitor && (
+                  <p
+                    className={`absolute inset-x-0 -bottom-6 animate-fade-up text-center text-xs font-medium ${
+                      avisoLeitor.tipo === "ok" ? "text-green-700" : "text-red-600"
+                    }`}
+                  >
+                    {avisoLeitor.texto}
+                  </p>
+                )}
+              </div>
+
               <nav className="no-scrollbar -mx-1 mb-4 flex gap-2 overflow-x-auto px-1">
                 <button
                   onClick={() => setCategoriaAtiva("todas")}

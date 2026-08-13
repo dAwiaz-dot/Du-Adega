@@ -109,6 +109,7 @@ function adicionarColunaSeFaltando(tabela: string, definicao: string) {
 
 // estoque nulo = produto sem controle de estoque (comportamento anterior, não bloqueia venda)
 adicionarColunaSeFaltando("produtos", "estoque INTEGER");
+adicionarColunaSeFaltando("produtos", "codigo_barras TEXT");
 adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
 adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
 adicionarColunaSeFaltando("pedidos", "caixa_id INTEGER");
@@ -332,6 +333,7 @@ export type Produto = {
   ativo: number;
   ordem: number;
   estoque: number | null;
+  codigo_barras: string | null;
   criado_em: string;
 };
 

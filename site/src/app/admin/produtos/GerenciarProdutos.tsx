@@ -15,6 +15,7 @@ type FormState = {
   destaque: string;
   imagem: string | null;
   estoque: string;
+  codigoBarras: string;
 };
 
 const FORM_VAZIO: FormState = {
@@ -26,6 +27,7 @@ const FORM_VAZIO: FormState = {
   destaque: "",
   imagem: null,
   estoque: "",
+  codigoBarras: "",
 };
 
 export function GerenciarProdutos({
@@ -66,6 +68,7 @@ export function GerenciarProdutos({
       destaque: produto.destaque ?? "",
       imagem: produto.imagem,
       estoque: produto.estoque === null ? "" : String(produto.estoque),
+      codigoBarras: produto.codigo_barras ?? "",
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -121,6 +124,7 @@ export function GerenciarProdutos({
         destaque: form.destaque.trim() || null,
         imagem: form.imagem,
         estoque: form.estoque.trim() === "" ? null : Number(form.estoque),
+        codigo_barras: form.codigoBarras.trim() || null,
       };
 
       if (form.id) {
@@ -234,20 +238,33 @@ export function GerenciarProdutos({
             />
           </div>
 
-          <div className="mt-4">
-            <input
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="Estoque (deixe vazio pra não controlar)"
-              value={form.estoque}
-              onChange={(e) => setForm((f) => ({ ...f, estoque: e.target.value }))}
-              className="w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20 sm:w-64"
-            />
-            <p className="mt-1 text-xs text-foreground/50">
-              Vazio = não controla estoque (venda liberada sempre). Preenchido = baixa a
-              cada pedido/venda e bloqueia quando zerar.
-            </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <input
+                type="number"
+                min={0}
+                inputMode="numeric"
+                placeholder="Estoque (deixe vazio pra não controlar)"
+                value={form.estoque}
+                onChange={(e) => setForm((f) => ({ ...f, estoque: e.target.value }))}
+                className="w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              />
+              <p className="mt-1 text-xs text-foreground/50">
+                Vazio = não controla estoque. Preenchido = baixa a cada venda e bloqueia
+                quando zerar.
+              </p>
+            </div>
+            <div>
+              <input
+                placeholder="Código de barras (opcional)"
+                value={form.codigoBarras}
+                onChange={(e) => setForm((f) => ({ ...f, codigoBarras: e.target.value }))}
+                className="w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              />
+              <p className="mt-1 text-xs text-foreground/50">
+                Bipa o produto com o leitor aqui, ou digita — usado pra achar rápido no PDV.
+              </p>
+            </div>
           </div>
 
           <div className="mt-4 flex items-center gap-4">

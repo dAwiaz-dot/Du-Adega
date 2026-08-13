@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { nome, categoria, descricao, preco, imagem, destaque, estoque } = body as {
+  const { nome, categoria, descricao, preco, imagem, destaque, estoque, codigo_barras } = body as {
     nome: string;
     categoria: string;
     descricao?: string;
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     imagem?: string | null;
     destaque?: string | null;
     estoque?: number | null;
+    codigo_barras?: string | null;
   };
 
   if (!nome?.trim() || !categoria?.trim() || !preco || preco <= 0) {
@@ -46,8 +47,8 @@ export async function POST(request: NextRequest) {
     .get() as { count: number };
 
   db.prepare(
-    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem, estoque)
-     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem, @estoque)`
+    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem, estoque, codigo_barras)
+     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem, @estoque, @codigoBarras)`
   ).run({
     id,
     nome: nome.trim(),
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
     destaque: destaque?.trim() || null,
     ordem: maxOrdem,
     estoque: estoque === undefined || estoque === null ? null : Number(estoque),
+    codigoBarras: codigo_barras?.trim() || null,
   });
 
   garantirCategoria(categoria.trim());
