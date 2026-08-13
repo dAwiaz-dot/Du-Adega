@@ -34,10 +34,6 @@ export function PDV({
 }) {
   const router = useRouter();
   const produtos = produtosIniciais;
-  const categoriaIcone = useMemo(
-    () => Object.fromEntries(categoriasIniciais.map((c) => [c.nome, c.icone])),
-    [categoriasIniciais]
-  );
   const categorias = useMemo(() => {
     const presentes = new Set(produtos.map((p) => p.categoria));
     return categoriasIniciais.filter((c) => presentes.has(c.nome)).map((c) => c.nome);
@@ -388,7 +384,7 @@ export function PDV({
                         : "border-borda hover:border-vermelho hover:text-vermelho"
                     }`}
                   >
-                    {categoriaIcone[categoria] ?? "🍹"} {categoria}
+                    {categoria}
                   </button>
                 ))}
               </nav>
@@ -418,7 +414,7 @@ export function PDV({
                         {produto.imagem ? (
                           <Image src={produto.imagem} alt="" fill sizes="56px" className="object-cover" />
                         ) : (
-                          categoriaIcone[produto.categoria] ?? "🍹"
+                          <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
                         )}
                       </div>
                       <p className="text-xs font-medium leading-tight">{produto.nome}</p>

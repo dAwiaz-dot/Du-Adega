@@ -14,10 +14,6 @@ export function PedidoForm({
   categoriasIniciais: Categoria[];
 }) {
   const produtos = produtosIniciais;
-  const categoriaIcone = useMemo(
-    () => Object.fromEntries(categoriasIniciais.map((c) => [c.nome, c.icone])),
-    [categoriasIniciais]
-  );
   const categorias = useMemo(() => {
     const presentes = new Set(produtos.map((p) => p.categoria));
     const ordenadas = categoriasIniciais
@@ -266,7 +262,6 @@ export function PedidoForm({
                     : "border-borda hover:border-vermelho hover:text-vermelho"
                 }`}
               >
-                <span>{categoriaIcone[categoria] ?? "🍹"}</span>
                 {categoria}
               </a>
             );
@@ -278,7 +273,6 @@ export function PedidoForm({
         {categorias.map((categoria) => (
           <div key={categoria} id={`p-${categoria}`} className="mb-8 scroll-mt-32">
             <h2 className="flex items-center gap-2 text-vermelho font-semibold uppercase tracking-wide text-sm">
-              <span>{categoriaIcone[categoria] ?? "🍹"}</span>
               {categoria}
             </h2>
             <div className="mt-3 space-y-3">
@@ -305,7 +299,7 @@ export function PedidoForm({
                             className="object-cover transition-transform duration-300 group-hover:scale-110"
                           />
                         ) : (
-                          categoriaIcone[categoria] ?? "🍹"
+                          <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
                         )}
                         <span
                           aria-hidden

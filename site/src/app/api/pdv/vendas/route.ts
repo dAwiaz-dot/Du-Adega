@@ -68,7 +68,8 @@ export async function POST(request: NextRequest) {
     const pedidoId = Number(result.lastInsertRowid);
     baixarEstoque(body.itens, { tipo: "venda_pdv", pedidoId });
     if (body.formaPagamento === "Fiado" && clienteNome && clienteTelefone) {
-      ajustarSaldoDevedor(clienteTelefone, clienteNome, total, "fiado", pedidoId);
+      const resumoItens = body.itens.map((item) => `${item.quantidade}x ${item.nome}`).join(", ");
+      ajustarSaldoDevedor(clienteTelefone, clienteNome, total, "fiado", pedidoId, resumoItens);
     }
     return result;
   });

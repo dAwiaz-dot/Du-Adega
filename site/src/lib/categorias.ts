@@ -12,7 +12,7 @@ export function garantirCategoria(nome: string) {
     .prepare("SELECT COALESCE(MAX(ordem), -1) + 1 as count FROM categorias")
     .get() as { count: number };
 
-  db.prepare("INSERT INTO categorias (nome, icone, ordem) VALUES (?, '🍹', ?)").run(
+  db.prepare("INSERT INTO categorias (nome, icone, ordem) VALUES (?, '', ?)").run(
     nome,
     maxOrdem
   );

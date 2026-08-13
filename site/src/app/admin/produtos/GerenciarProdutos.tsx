@@ -340,7 +340,7 @@ export function GerenciarProdutos({
                       {produto.imagem ? (
                         <Image src={produto.imagem} alt="" fill sizes="56px" className="object-cover" />
                       ) : (
-                        "🍹"
+                        <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">

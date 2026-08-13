@@ -2,9 +2,16 @@
 
 import { useMemo, useState } from "react";
 import type { Cliente } from "@/lib/clientes";
+import type { MovimentoSaldo } from "@/lib/db";
 import { AdminNav } from "../AdminNav";
 
 type Ordenacao = "recente" | "gasto" | "pedidos" | "deve";
+
+const TIPO_LABEL: Record<MovimentoSaldo["tipo"], string> = {
+  fiado: "Fiado",
+  pagamento: "Pagamento",
+  ajuste: "Débito lançado",
+};
 
 function linkWhatsApp(telefone: string) {
   const digitos = telefone.replace(/\D/g, "");
@@ -31,6 +38,11 @@ export function VerClientes({
   const [novoNome, setNovoNome] = useState("");
   const [novoTelefone, setNovoTelefone] = useState("");
   const [novoValor, setNovoValor] = useState("");
+  const [novaObservacao, setNovaObservacao] = useState("");
+
+  const [historicoAberto, setHistoricoAberto] = useState<string | null>(null);
+  const [historico, setHistorico] = useState<MovimentoSaldo[]>([]);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(false);
 
   const clientesFiltrados = useMemo(() => {
     const buscaNorm = busca.trim().toLowerCase();
@@ -138,6 +150,7 @@ export function VerClientes({
           nome: novoNome.trim(),
           valor,
           tipo: "divida",
+          observacao: novaObservacao.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -149,11 +162,28 @@ export function VerClientes({
       setNovoNome("");
       setNovoTelefone("");
       setNovoValor("");
+      setNovaObservacao("");
       setNovoDebitoAberto(false);
     } catch {
       setErro("Erro de conexão.");
     } finally {
       setSalvando(false);
+    }
+  }
+
+  async function abrirHistorico(telefone: string) {
+    if (historicoAberto === telefone) {
+      setHistoricoAberto(null);
+      return;
+    }
+    setHistoricoAberto(telefone);
+    setCarregandoHistorico(true);
+    try {
+      const res = await fetch(`/api/clientes/${encodeURIComponent(telefone)}/movimentos`);
+      const data = await res.json();
+      setHistorico(res.ok ? data.movimentos : []);
+    } finally {
+      setCarregandoHistorico(false);
     }
   }
 
@@ -248,15 +278,23 @@ export function VerClientes({
                     </div>
                   )}
                   {cliente.saldo_devedor > 0 && (
-                    <button
-                      onClick={() => {
-                        setPagandoTelefone(cliente.cliente_telefone);
-                        setErro(null);
-                      }}
-                      className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
-                    >
-                      Registrar pagamento
-                    </button>
+                    <>
+                      <button
+                        onClick={() => abrirHistorico(cliente.cliente_telefone)}
+                        className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
+                      >
+                        {historicoAberto === cliente.cliente_telefone ? "Fechar" : "O que deve"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPagandoTelefone(cliente.cliente_telefone);
+                          setErro(null);
+                        }}
+                        className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
+                      >
+                        Registrar pagamento
+                      </button>
+                    </>
                   )}
                   <a
                     href={linkWhatsApp(cliente.cliente_telefone)}
@@ -302,6 +340,34 @@ export function VerClientes({
                   {erro && <p className="w-full text-sm text-red-600">{erro}</p>}
                 </div>
               )}
+
+              {historicoAberto === cliente.cliente_telefone && (
+                <div className="mt-3 rounded-md bg-borda/20 p-3">
+                  {carregandoHistorico ? (
+                    <p className="text-sm text-foreground/50">Carregando...</p>
+                  ) : historico.length === 0 ? (
+                    <p className="text-sm text-foreground/50">Nada registrado ainda.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {historico.map((mov) => (
+                        <li key={mov.id} className="text-sm">
+                          <div className="flex justify-between">
+                            <span className="font-medium">{TIPO_LABEL[mov.tipo]}</span>
+                            <span className={mov.valor > 0 ? "text-red-600" : "text-green-700"}>
+                              {mov.valor > 0 ? "+" : ""}
+                              R$ {mov.valor.toFixed(2)}
+                            </span>
+                          </div>
+                          {mov.observacao && (
+                            <p className="text-xs text-foreground/60">{mov.observacao}</p>
+                          )}
+                          <p className="text-xs text-foreground/40">{mov.criado_em}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -336,6 +402,13 @@ export function VerClientes({
                 value={novoValor}
                 onChange={(e) => setNovoValor(e.target.value)}
                 className="w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              />
+              <textarea
+                placeholder="O que ela está devendo (ex: 2 cerveja long neck e 1 vinho)"
+                value={novaObservacao}
+                onChange={(e) => setNovaObservacao(e.target.value)}
+                rows={2}
+                className="w-full rounded-md border border-borda px-4 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
               />
               {erro && <p className="text-sm text-red-600">{erro}</p>}
               <div className="flex gap-3">

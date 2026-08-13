@@ -18,9 +18,9 @@ db.pragma("busy_timeout = 8000");
 // arquivo ao mesmo tempo no primeiro boot e tentam migrar o schema juntos.
 // Em vez de brigar pela trava do SQLite (o que ainda escapava do
 // busy_timeout com muita concorrência), usa um lock de arquivo simples:
-// só um processo migra por vez, os outros esperam ele terminar e então
-// seguem — a essa altura tudo já existe, então os "IF NOT EXISTS" deles
-// são só leitura rápida, sem disputa nenhuma.
+// só um processo migra por vez — do início ao fim da migração inteira,
+// sem soltar e pegar o lock de novo no meio — os outros esperam ele
+// terminar e então seguem, já com tudo pronto.
 const lockPath = `${dbPath}.setup-lock`;
 
 function esperar(ms: number) {
@@ -30,99 +30,39 @@ function esperar(ms: number) {
 
 function comLockDeSetup<T>(fn: () => T): T {
   let temLock = false;
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 300; i++) {
     try {
       fs.closeSync(fs.openSync(lockPath, "wx"));
       temLock = true;
       break;
     } catch {
+      // se o lock já existe há muito tempo, o processo que segurava
+      // provavelmente morreu (ex: build cancelado no meio) — remove e
+      // tenta de novo, em vez de esperar pra sempre por um lock morto.
+      try {
+        const stat = fs.statSync(lockPath);
+        if (Date.now() - stat.mtimeMs > 20000) {
+          fs.unlinkSync(lockPath);
+        }
+      } catch {
+        // sumiu entre o catch e o stat — outro processo já resolveu, segue o loop
+      }
       esperar(100);
     }
+  }
+  if (!temLock) {
+    throw new Error("Não foi possível obter o lock de setup do banco a tempo.");
   }
   try {
     return fn();
   } finally {
-    if (temLock) {
-      try {
-        fs.unlinkSync(lockPath);
-      } catch {
-        // já foi removido — tudo bem
-      }
+    try {
+      fs.unlinkSync(lockPath);
+    } catch {
+      // já foi removido — tudo bem
     }
   }
 }
-
-comLockDeSetup(() =>
-  db.exec(`
-  CREATE TABLE IF NOT EXISTS pedidos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    cliente_nome TEXT NOT NULL,
-    cliente_telefone TEXT NOT NULL,
-    endereco TEXT NOT NULL,
-    observacoes TEXT,
-    itens TEXT NOT NULL,
-    total REAL NOT NULL,
-    status TEXT NOT NULL DEFAULT 'novo',
-    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
-  );
-
-  CREATE TABLE IF NOT EXISTS produtos (
-    id TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    categoria TEXT NOT NULL,
-    descricao TEXT NOT NULL DEFAULT '',
-    preco REAL NOT NULL,
-    imagem TEXT,
-    destaque TEXT,
-    ativo INTEGER NOT NULL DEFAULT 1,
-    ordem INTEGER NOT NULL DEFAULT 0,
-    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
-  );
-
-  CREATE TABLE IF NOT EXISTS categorias (
-    nome TEXT PRIMARY KEY,
-    icone TEXT NOT NULL DEFAULT '🍹',
-    ordem INTEGER NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS caixa (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    aberto_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    fechado_em TEXT,
-    valor_inicial REAL NOT NULL,
-    valor_contado REAL,
-    observacoes TEXT,
-    status TEXT NOT NULL DEFAULT 'aberto'
-  );
-
-  CREATE TABLE IF NOT EXISTS estoque_movimentos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    produto_id TEXT NOT NULL,
-    tipo TEXT NOT NULL,
-    quantidade INTEGER NOT NULL,
-    estoque_resultante INTEGER NOT NULL,
-    pedido_id INTEGER,
-    observacao TEXT,
-    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
-  );
-
-  CREATE TABLE IF NOT EXISTS clientes (
-    telefone TEXT PRIMARY KEY,
-    nome TEXT NOT NULL,
-    saldo_devedor REAL NOT NULL DEFAULT 0
-  );
-
-  CREATE TABLE IF NOT EXISTS movimentos_saldo (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    telefone TEXT NOT NULL,
-    tipo TEXT NOT NULL,
-    valor REAL NOT NULL,
-    pedido_id INTEGER,
-    observacao TEXT,
-    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
-  );
-`)
-);
 
 function colunaExiste(tabela: string, coluna: string): boolean {
   const colunas = db.prepare(`PRAGMA table_info(${tabela})`).all() as { name: string }[];
@@ -132,24 +72,27 @@ function colunaExiste(tabela: string, coluna: string): boolean {
 function adicionarColunaSeFaltando(tabela: string, definicao: string) {
   const [coluna] = definicao.trim().split(/\s+/);
   if (colunaExiste(tabela, coluna)) return;
-  try {
-    comLockDeSetup(() => db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`));
-  } catch (err) {
-    const mensagem = err instanceof Error ? err.message : "";
-    if (!mensagem.includes("duplicate column")) throw err;
-    // outro worker do build já adicionou a coluna ao mesmo tempo — tudo bem
-  }
+  db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`);
 }
 
-// estoque nulo = produto sem controle de estoque (comportamento anterior, não bloqueia venda)
-adicionarColunaSeFaltando("produtos", "estoque INTEGER");
-adicionarColunaSeFaltando("produtos", "codigo_barras TEXT");
-// mostrar_site = aparece no site de pedidos. ativo=1 + mostrar_site=0 é um
-// produto que existe pro estoque/PDV mas não é vendido pra cliente online.
-adicionarColunaSeFaltando("produtos", "mostrar_site INTEGER NOT NULL DEFAULT 1");
-adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
-adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
-adicionarColunaSeFaltando("pedidos", "caixa_id INTEGER");
+// Semeia só se a tabela estiver vazia (primeiro boot). Isso garante que,
+// depois de renomear ou apagar algo pelo admin, a semente não "ressuscita"
+// o dado antigo — nem no mesmo processo, nem num redeploy futuro.
+function semearSeVazio<T>(
+  tabela: string,
+  itens: T[],
+  inserirUm: (item: T, index: number) => void
+) {
+  const { count } = db
+    .prepare(`SELECT COUNT(*) as count FROM ${tabela}`)
+    .get() as { count: number };
+  if (count > 0) return;
+
+  const transacao = db.transaction(() => {
+    itens.forEach((item, index) => inserirUm(item, index));
+  });
+  transacao();
+}
 
 const SEED_PRODUTOS = [
   {
@@ -253,68 +196,125 @@ const SEED_PRODUTOS = [
   },
 ];
 
-// Semeia só se a tabela estiver vazia (primeiro boot). Isso garante que,
-// depois de renomear ou apagar algo pelo admin, a semente não "ressuscita"
-// o dado antigo — nem no mesmo processo, nem num redeploy futuro.
-// O try/catch cobre a corrida entre múltiplos workers do build tentando
-// semear ao mesmo tempo (um vence, o outro esbarra numa UNIQUE e ignora).
-function semearSeVazio<T>(
-  tabela: string,
-  itens: T[],
-  inserirUm: (item: T, index: number) => void
-) {
-  const { count } = db
-    .prepare(`SELECT COUNT(*) as count FROM ${tabela}`)
-    .get() as { count: number };
-  if (count > 0) return;
-
-  const transacao = db.transaction(() => {
-    itens.forEach((item, index) => inserirUm(item, index));
-  });
-  try {
-    comLockDeSetup(() => transacao());
-  } catch {
-    // outro processo semeou ao mesmo tempo — tudo bem, ignora
-  }
-}
-
-const inserirSemente = db.prepare(`
-  INSERT OR IGNORE INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem)
-  VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem)
-`);
-semearSeVazio("produtos", SEED_PRODUTOS, (item, index) =>
-  inserirSemente.run({ ...item, ordem: index })
-);
-
 const SEED_CATEGORIAS = [
-  { nome: "Vinhos", icone: "🍷" },
-  { nome: "Cervejas", icone: "🍺" },
-  { nome: "Destilados", icone: "🥃" },
-  { nome: "Gelo e Carvão", icone: "🧊" },
-  { nome: "Água e Refrigerante", icone: "🥤" },
+  { nome: "Vinhos" },
+  { nome: "Cervejas" },
+  { nome: "Destilados" },
+  { nome: "Gelo e Carvão" },
+  { nome: "Água e Refrigerante" },
 ];
 
-const inserirCategoriaSemente = db.prepare(`
-  INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, @icone, @ordem)
-`);
-semearSeVazio("categorias", SEED_CATEGORIAS, (item, index) =>
-  inserirCategoriaSemente.run({ ...item, ordem: index })
-);
+comLockDeSetup(() => {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pedidos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      cliente_nome TEXT NOT NULL,
+      cliente_telefone TEXT NOT NULL,
+      endereco TEXT NOT NULL,
+      observacoes TEXT,
+      itens TEXT NOT NULL,
+      total REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'novo',
+      criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
 
-// Garante que toda categoria já usada em algum produto exista na tabela
-// (cobre bancos antigos, migrados antes dessa tabela existir).
-const categoriasEmUso = db
-  .prepare("SELECT DISTINCT categoria FROM produtos")
-  .all() as { categoria: string }[];
-const { count: maxOrdemCategoria } = db
-  .prepare("SELECT COALESCE(MAX(ordem), -1) + 1 as count FROM categorias")
-  .get() as { count: number };
-const garantirCategoria = db.prepare(
-  "INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, '🍹', @ordem)"
-);
-categoriasEmUso.forEach((c, index) =>
-  garantirCategoria.run({ nome: c.categoria, ordem: maxOrdemCategoria + index })
-);
+    CREATE TABLE IF NOT EXISTS produtos (
+      id TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      categoria TEXT NOT NULL,
+      descricao TEXT NOT NULL DEFAULT '',
+      preco REAL NOT NULL,
+      imagem TEXT,
+      destaque TEXT,
+      ativo INTEGER NOT NULL DEFAULT 1,
+      ordem INTEGER NOT NULL DEFAULT 0,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS categorias (
+      nome TEXT PRIMARY KEY,
+      icone TEXT NOT NULL DEFAULT '',
+      ordem INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS caixa (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      aberto_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+      fechado_em TEXT,
+      valor_inicial REAL NOT NULL,
+      valor_contado REAL,
+      observacoes TEXT,
+      status TEXT NOT NULL DEFAULT 'aberto'
+    );
+
+    CREATE TABLE IF NOT EXISTS estoque_movimentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      produto_id TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      quantidade INTEGER NOT NULL,
+      estoque_resultante INTEGER NOT NULL,
+      pedido_id INTEGER,
+      observacao TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+
+    CREATE TABLE IF NOT EXISTS clientes (
+      telefone TEXT PRIMARY KEY,
+      nome TEXT NOT NULL,
+      saldo_devedor REAL NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS movimentos_saldo (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      telefone TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      valor REAL NOT NULL,
+      pedido_id INTEGER,
+      observacao TEXT,
+      criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+    );
+  `);
+
+  // estoque nulo = produto sem controle de estoque (comportamento anterior, não bloqueia venda)
+  adicionarColunaSeFaltando("produtos", "estoque INTEGER");
+  adicionarColunaSeFaltando("produtos", "codigo_barras TEXT");
+  // mostrar_site = aparece no site de pedidos. ativo=1 + mostrar_site=0 é um
+  // produto que existe pro estoque/PDV mas não é vendido pra cliente online.
+  adicionarColunaSeFaltando("produtos", "mostrar_site INTEGER NOT NULL DEFAULT 1");
+  adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
+  adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
+  adicionarColunaSeFaltando("pedidos", "caixa_id INTEGER");
+
+  const inserirSemente = db.prepare(`
+    INSERT OR IGNORE INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem)
+    VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem)
+  `);
+  semearSeVazio("produtos", SEED_PRODUTOS, (item, index) =>
+    inserirSemente.run({ ...item, ordem: index })
+  );
+
+  const inserirCategoriaSemente = db.prepare(`
+    INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, '', @ordem)
+  `);
+  semearSeVazio("categorias", SEED_CATEGORIAS, (item, index) =>
+    inserirCategoriaSemente.run({ ...item, ordem: index })
+  );
+
+  // Garante que toda categoria já usada em algum produto exista na tabela
+  // (cobre bancos antigos, migrados antes dessa tabela existir).
+  const categoriasEmUso = db
+    .prepare("SELECT DISTINCT categoria FROM produtos")
+    .all() as { categoria: string }[];
+  const { count: maxOrdemCategoria } = db
+    .prepare("SELECT COALESCE(MAX(ordem), -1) + 1 as count FROM categorias")
+    .get() as { count: number };
+  const garantirCategoria = db.prepare(
+    "INSERT OR IGNORE INTO categorias (nome, icone, ordem) VALUES (@nome, '', @ordem)"
+  );
+  categoriasEmUso.forEach((c, index) =>
+    garantirCategoria.run({ nome: c.categoria, ordem: maxOrdemCategoria + index })
+  );
+});
 
 export type PedidoItem = {
   id: string;

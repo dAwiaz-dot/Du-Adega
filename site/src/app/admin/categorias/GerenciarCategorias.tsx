@@ -17,7 +17,6 @@ export function GerenciarCategorias({
     [...categoriasIniciais].sort((a, b) => a.ordem - b.ordem)
   );
   const [novoNome, setNovoNome] = useState("");
-  const [novoIcone, setNovoIcone] = useState("🍹");
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [editandoNome, setEditandoNome] = useState<string | null>(null);
@@ -33,7 +32,7 @@ export function GerenciarCategorias({
       const res = await fetch("/api/categorias", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome: novoNome.trim(), icone: novoIcone.trim() || "🍹" }),
+        body: JSON.stringify({ nome: novoNome.trim() }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -42,24 +41,12 @@ export function GerenciarCategorias({
       }
       setCategorias((atual) => [
         ...atual,
-        { nome: novoNome.trim(), icone: novoIcone.trim() || "🍹", ordem: atual.length },
+        { nome: novoNome.trim(), icone: "", ordem: atual.length },
       ]);
       setNovoNome("");
-      setNovoIcone("🍹");
     } finally {
       setSalvando(false);
     }
-  }
-
-  async function mudarIcone(nome: string, icone: string) {
-    setCategorias((atual) =>
-      atual.map((c) => (c.nome === nome ? { ...c, icone } : c))
-    );
-    await fetch(`/api/categorias/${encodeURIComponent(nome)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ icone }),
-    });
   }
 
   async function mover(nome: string, direcao: -1 | 1) {
@@ -143,15 +130,6 @@ export function GerenciarCategorias({
           onSubmit={criar}
           className="flex flex-wrap items-end gap-3 rounded-lg border border-borda bg-background p-6"
         >
-          <div>
-            <label className="text-xs text-foreground/60">Ícone</label>
-            <input
-              value={novoIcone}
-              onChange={(e) => setNovoIcone(e.target.value)}
-              maxLength={4}
-              className="mt-1 w-16 rounded-md border border-borda px-3 py-2 text-center text-lg"
-            />
-          </div>
           <div className="flex-1 min-w-[180px]">
             <label className="text-xs text-foreground/60">Nova categoria</label>
             <input
@@ -196,13 +174,6 @@ export function GerenciarCategorias({
                   ▼
                 </button>
               </div>
-
-              <input
-                value={categoria.icone}
-                onChange={(e) => mudarIcone(categoria.nome, e.target.value)}
-                maxLength={4}
-                className="w-12 rounded-md border border-borda px-2 py-1.5 text-center text-lg"
-              />
 
               {editandoNome === categoria.nome ? (
                 <input

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
   db.prepare("INSERT INTO categorias (nome, icone, ordem) VALUES (?, ?, ?)").run(
     nome.trim(),
-    icone?.trim() || "🍹",
+    icone?.trim() || "",
     maxOrdem
   );
 
