@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { Produto } from "@/lib/db";
 import { AdminNav } from "../AdminNav";
 
+const ESTOQUE_BAIXO = 5;
+
 type FormState = {
   id: string | null;
   nome: string;
@@ -13,6 +15,7 @@ type FormState = {
   preco: string;
   destaque: string;
   imagem: string | null;
+  estoque: string;
 };
 
 const FORM_VAZIO: FormState = {
@@ -23,6 +26,7 @@ const FORM_VAZIO: FormState = {
   preco: "",
   destaque: "",
   imagem: null,
+  estoque: "",
 };
 
 export function GerenciarProdutos({
@@ -62,6 +66,7 @@ export function GerenciarProdutos({
       preco: String(produto.preco),
       destaque: produto.destaque ?? "",
       imagem: produto.imagem,
+      estoque: produto.estoque === null ? "" : String(produto.estoque),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -116,6 +121,7 @@ export function GerenciarProdutos({
         preco,
         destaque: form.destaque.trim() || null,
         imagem: form.imagem,
+        estoque: form.estoque.trim() === "" ? null : Number(form.estoque),
       };
 
       if (form.id) {
@@ -229,6 +235,22 @@ export function GerenciarProdutos({
             />
           </div>
 
+          <div className="mt-4">
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Estoque (deixe vazio pra não controlar)"
+              value={form.estoque}
+              onChange={(e) => setForm((f) => ({ ...f, estoque: e.target.value }))}
+              className="w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20 sm:w-64"
+            />
+            <p className="mt-1 text-xs text-foreground/50">
+              Vazio = não controla estoque (venda liberada sempre). Preenchido = baixa a
+              cada pedido/venda e bloqueia quando zerar.
+            </p>
+          </div>
+
           <div className="mt-4 flex items-center gap-4">
             {form.imagem && (
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-preto">
@@ -306,8 +328,18 @@ export function GerenciarProdutos({
                             Oculto
                           </span>
                         )}
+                        {produto.estoque !== null && produto.estoque <= ESTOQUE_BAIXO && (
+                          <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-700">
+                            {produto.estoque === 0 ? "Sem estoque" : `Estoque baixo: ${produto.estoque}`}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-sm text-foreground/60">R$ {produto.preco.toFixed(2)}</p>
+                      <p className="text-sm text-foreground/60">
+                        R$ {produto.preco.toFixed(2)}
+                        {produto.estoque !== null && (
+                          <span className="text-foreground/40"> · estoque: {produto.estoque}</span>
+                        )}
+                      </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <button

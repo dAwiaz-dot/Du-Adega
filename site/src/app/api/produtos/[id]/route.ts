@@ -16,7 +16,17 @@ export async function PATCH(
   const campos: string[] = [];
   const valores: Record<string, unknown> = { id };
 
-  const permitidos = ["nome", "categoria", "descricao", "preco", "imagem", "destaque", "ativo", "ordem"];
+  const permitidos = [
+    "nome",
+    "categoria",
+    "descricao",
+    "preco",
+    "imagem",
+    "destaque",
+    "ativo",
+    "ordem",
+    "estoque",
+  ];
   for (const campo of permitidos) {
     if (campo in body) {
       campos.push(`${campo} = @${campo}`);

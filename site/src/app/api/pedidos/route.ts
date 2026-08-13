@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, type PedidoItem } from "@/lib/db";
 import { cookies } from "next/headers";
+import { verificarEstoque, baixarEstoque, mensagemEstoqueInsuficiente } from "@/lib/estoque";
 
 type NovoPedidoBody = {
   clienteNome: string;
@@ -26,6 +27,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const erros = verificarEstoque(body.itens);
+  if (erros.length > 0) {
+    return NextResponse.json({ error: mensagemEstoqueInsuficiente(erros) }, { status: 409 });
+  }
+
   const total = body.itens.reduce(
     (soma, item) => soma + item.preco * item.quantidade,
     0
@@ -36,14 +42,20 @@ export async function POST(request: NextRequest) {
     VALUES (@clienteNome, @clienteTelefone, @endereco, @observacoes, @itens, @total)
   `);
 
-  const result = stmt.run({
-    clienteNome: body.clienteNome.trim(),
-    clienteTelefone: body.clienteTelefone.trim(),
-    endereco: body.endereco.trim(),
-    observacoes: body.observacoes?.trim() ?? "",
-    itens: JSON.stringify(body.itens),
-    total,
+  const criarPedido = db.transaction(() => {
+    const result = stmt.run({
+      clienteNome: body.clienteNome.trim(),
+      clienteTelefone: body.clienteTelefone.trim(),
+      endereco: body.endereco.trim(),
+      observacoes: body.observacoes?.trim() ?? "",
+      itens: JSON.stringify(body.itens),
+      total,
+    });
+    baixarEstoque(body.itens);
+    return result;
   });
+
+  const result = criarPedido();
 
   return NextResponse.json({ id: result.lastInsertRowid, total }, { status: 201 });
 }

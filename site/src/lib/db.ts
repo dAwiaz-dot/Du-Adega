@@ -47,6 +47,26 @@ db.exec(`
   );
 `);
 
+function colunaExiste(tabela: string, coluna: string): boolean {
+  const colunas = db.prepare(`PRAGMA table_info(${tabela})`).all() as { name: string }[];
+  return colunas.some((c) => c.name === coluna);
+}
+
+function adicionarColunaSeFaltando(tabela: string, definicao: string) {
+  const [coluna] = definicao.trim().split(/\s+/);
+  if (colunaExiste(tabela, coluna)) return;
+  try {
+    db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`);
+  } catch {
+    // outro worker do build já adicionou a coluna ao mesmo tempo — tudo bem
+  }
+}
+
+// estoque nulo = produto sem controle de estoque (comportamento anterior, não bloqueia venda)
+adicionarColunaSeFaltando("produtos", "estoque INTEGER");
+adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
+adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
+
 const SEED_PRODUTOS = [
   {
     id: "vinho-tinto-reserva",
@@ -228,6 +248,8 @@ export type Pedido = {
   itens: string;
   total: number;
   status: "novo" | "preparando" | "a_caminho" | "entregue" | "cancelado";
+  origem: "online" | "pdv";
+  forma_pagamento: string | null;
   criado_em: string;
 };
 
@@ -241,6 +263,7 @@ export type Produto = {
   destaque: string | null;
   ativo: number;
   ordem: number;
+  estoque: number | null;
   criado_em: string;
 };
 

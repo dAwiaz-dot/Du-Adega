@@ -23,13 +23,14 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { nome, categoria, descricao, preco, imagem, destaque } = body as {
+  const { nome, categoria, descricao, preco, imagem, destaque, estoque } = body as {
     nome: string;
     categoria: string;
     descricao?: string;
     preco: number;
     imagem?: string | null;
     destaque?: string | null;
+    estoque?: number | null;
   };
 
   if (!nome?.trim() || !categoria?.trim() || !preco || preco <= 0) {
@@ -45,8 +46,8 @@ export async function POST(request: NextRequest) {
     .get() as { count: number };
 
   db.prepare(
-    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem)
-     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem)`
+    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem, estoque)
+     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem, @estoque)`
   ).run({
     id,
     nome: nome.trim(),
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     imagem: imagem?.trim() || null,
     destaque: destaque?.trim() || null,
     ordem: maxOrdem,
+    estoque: estoque === undefined || estoque === null ? null : Number(estoque),
   });
 
   garantirCategoria(categoria.trim());
