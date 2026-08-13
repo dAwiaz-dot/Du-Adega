@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { listarProdutosAtivos } from "@/lib/produtos";
+import { listarProdutosVenda } from "@/lib/produtos";
 import { listarCategorias } from "@/lib/categorias";
 import { resumoVendasHoje } from "@/lib/pdv";
 import { caixaAberto, resumoCaixa } from "@/lib/caixa";
@@ -22,7 +22,7 @@ export default async function AdminPDVPage() {
     return <AdminLogin />;
   }
 
-  const produtos = listarProdutosAtivos();
+  const produtos = listarProdutosVenda();
   const categorias = listarCategorias();
   const resumoHoje = resumoVendasHoje();
   const caixa = caixaAberto();

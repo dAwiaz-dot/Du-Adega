@@ -1,6 +1,17 @@
 import { db, type Produto } from "@/lib/db";
 
-export function listarProdutosAtivos(): Produto[] {
+// Catálogo público do site de pedidos.
+export function listarProdutosSite(): Produto[] {
+  return db
+    .prepare(
+      "SELECT * FROM produtos WHERE ativo = 1 AND mostrar_site = 1 ORDER BY ordem ASC, criado_em ASC"
+    )
+    .all() as Produto[];
+}
+
+// Tudo que pode ser vendido (site + balcão), inclusive produtos que só
+// existem pro PDV/estoque e não aparecem no site.
+export function listarProdutosVenda(): Produto[] {
   return db
     .prepare("SELECT * FROM produtos WHERE ativo = 1 ORDER BY ordem ASC, criado_em ASC")
     .all() as Produto[];

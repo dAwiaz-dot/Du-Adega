@@ -28,6 +28,7 @@ export async function PATCH(
     "ordem",
     "estoque",
     "codigo_barras",
+    "mostrar_site",
   ];
   for (const campo of permitidos) {
     if (campo in body) {

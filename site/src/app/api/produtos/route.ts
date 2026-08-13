@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
-import { listarProdutosAtivos, listarTodosProdutos, gerarIdProduto } from "@/lib/produtos";
+import { listarProdutosSite, listarTodosProdutos, gerarIdProduto } from "@/lib/produtos";
 import { garantirCategoria } from "@/lib/categorias";
 
 export async function GET(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ produtos: listarTodosProdutos() });
   }
 
-  return NextResponse.json({ produtos: listarProdutosAtivos() });
+  return NextResponse.json({ produtos: listarProdutosSite() });
 }
 
 export async function POST(request: NextRequest) {
@@ -23,16 +23,18 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { nome, categoria, descricao, preco, imagem, destaque, estoque, codigo_barras } = body as {
-    nome: string;
-    categoria: string;
-    descricao?: string;
-    preco: number;
-    imagem?: string | null;
-    destaque?: string | null;
-    estoque?: number | null;
-    codigo_barras?: string | null;
-  };
+  const { nome, categoria, descricao, preco, imagem, destaque, estoque, codigo_barras, mostrar_site } =
+    body as {
+      nome: string;
+      categoria: string;
+      descricao?: string;
+      preco: number;
+      imagem?: string | null;
+      destaque?: string | null;
+      estoque?: number | null;
+      codigo_barras?: string | null;
+      mostrar_site?: boolean;
+    };
 
   if (!nome?.trim() || !categoria?.trim() || !preco || preco <= 0) {
     return NextResponse.json(
@@ -47,8 +49,8 @@ export async function POST(request: NextRequest) {
     .get() as { count: number };
 
   db.prepare(
-    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem, estoque, codigo_barras)
-     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem, @estoque, @codigoBarras)`
+    `INSERT INTO produtos (id, nome, categoria, descricao, preco, imagem, destaque, ordem, estoque, codigo_barras, mostrar_site)
+     VALUES (@id, @nome, @categoria, @descricao, @preco, @imagem, @destaque, @ordem, @estoque, @codigoBarras, @mostrarSite)`
   ).run({
     id,
     nome: nome.trim(),
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
     ordem: maxOrdem,
     estoque: estoque === undefined || estoque === null ? null : Number(estoque),
     codigoBarras: codigo_barras?.trim() || null,
+    mostrarSite: mostrar_site === false ? 0 : 1,
   });
 
   garantirCategoria(categoria.trim());

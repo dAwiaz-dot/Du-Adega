@@ -147,7 +147,7 @@ export function GerenciarProdutos({
         if (!res.ok) throw new Error(data.error);
         setProdutos((atual) => [
           ...atual,
-          { ...payload, id: data.id, ativo: 1, ordem: atual.length, criado_em: "" },
+          { ...payload, id: data.id, ativo: 1, mostrar_site: 1, ordem: atual.length, criado_em: "" },
         ]);
       }
 
@@ -168,6 +168,18 @@ export function GerenciarProdutos({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ativo: novoAtivo }),
+    });
+  }
+
+  async function alternarMostrarSite(produto: Produto) {
+    const novoValor = produto.mostrar_site ? 0 : 1;
+    setProdutos((atual) =>
+      atual.map((p) => (p.id === produto.id ? { ...p, mostrar_site: novoValor } : p))
+    );
+    await fetch(`/api/produtos/${produto.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mostrar_site: novoValor }),
     });
   }
 
@@ -344,6 +356,11 @@ export function GerenciarProdutos({
                             Oculto
                           </span>
                         )}
+                        {!produto.mostrar_site && (
+                          <span className="rounded-full bg-preto/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-preto">
+                            Só estoque
+                          </span>
+                        )}
                         {produto.estoque !== null && produto.estoque <= ESTOQUE_BAIXO && (
                           <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-red-700">
                             {produto.estoque === 0 ? "Sem estoque" : `Estoque baixo: ${produto.estoque}`}
@@ -359,8 +376,19 @@ export function GerenciarProdutos({
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <button
+                        onClick={() => alternarMostrarSite(produto)}
+                        title={
+                          produto.mostrar_site
+                            ? "Tirar do site (fica só pro estoque/PDV)"
+                            : "Colocar no site"
+                        }
+                        className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
+                      >
+                        {produto.mostrar_site ? "🌐 No site" : "🔒 Só estoque"}
+                      </button>
+                      <button
                         onClick={() => alternarAtivo(produto)}
-                        title={produto.ativo ? "Ocultar do site" : "Mostrar no site"}
+                        title={produto.ativo ? "Desativar produto (some de tudo)" : "Reativar produto"}
                         className="rounded-md border border-borda px-3 py-2 text-sm font-medium hover:bg-borda/30"
                       >
                         {produto.ativo ? "Ocultar" : "Mostrar"}

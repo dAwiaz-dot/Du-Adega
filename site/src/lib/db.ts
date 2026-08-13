@@ -15,26 +15,44 @@ db.pragma("journal_mode = WAL");
 db.pragma("busy_timeout = 8000");
 
 // Vários workers do build (ou do Next em dev) abrem essa mesma conexão de
-// arquivo ao mesmo tempo no primeiro boot. O busy_timeout já faz o SQLite
-// esperar a trava liberar, mas em picos de concorrência (9 workers) o erro
-// "database is locked" ainda escapa — essa função tenta de novo com um
-// pequeno backoff antes de desistir.
-function comRetentativa<T>(fn: () => T, tentativas = 6): T {
-  for (let i = 0; i < tentativas; i++) {
-    try {
-      return fn();
-    } catch (err) {
-      const mensagem = err instanceof Error ? err.message : "";
-      const travado = mensagem.includes("database is locked") || mensagem.includes("SQLITE_BUSY");
-      if (!travado || i === tentativas - 1) throw err;
-      const buffer = new SharedArrayBuffer(4);
-      Atomics.wait(new Int32Array(buffer), 0, 0, 150 * (i + 1));
-    }
-  }
-  throw new Error("inalcançável");
+// arquivo ao mesmo tempo no primeiro boot e tentam migrar o schema juntos.
+// Em vez de brigar pela trava do SQLite (o que ainda escapava do
+// busy_timeout com muita concorrência), usa um lock de arquivo simples:
+// só um processo migra por vez, os outros esperam ele terminar e então
+// seguem — a essa altura tudo já existe, então os "IF NOT EXISTS" deles
+// são só leitura rápida, sem disputa nenhuma.
+const lockPath = `${dbPath}.setup-lock`;
+
+function esperar(ms: number) {
+  const buffer = new SharedArrayBuffer(4);
+  Atomics.wait(new Int32Array(buffer), 0, 0, ms);
 }
 
-comRetentativa(() =>
+function comLockDeSetup<T>(fn: () => T): T {
+  let temLock = false;
+  for (let i = 0; i < 150; i++) {
+    try {
+      fs.closeSync(fs.openSync(lockPath, "wx"));
+      temLock = true;
+      break;
+    } catch {
+      esperar(100);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    if (temLock) {
+      try {
+        fs.unlinkSync(lockPath);
+      } catch {
+        // já foi removido — tudo bem
+      }
+    }
+  }
+}
+
+comLockDeSetup(() =>
   db.exec(`
   CREATE TABLE IF NOT EXISTS pedidos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +105,22 @@ comRetentativa(() =>
     observacao TEXT,
     criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
   );
+
+  CREATE TABLE IF NOT EXISTS clientes (
+    telefone TEXT PRIMARY KEY,
+    nome TEXT NOT NULL,
+    saldo_devedor REAL NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS movimentos_saldo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telefone TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    valor REAL NOT NULL,
+    pedido_id INTEGER,
+    observacao TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
 `)
 );
 
@@ -99,7 +133,7 @@ function adicionarColunaSeFaltando(tabela: string, definicao: string) {
   const [coluna] = definicao.trim().split(/\s+/);
   if (colunaExiste(tabela, coluna)) return;
   try {
-    comRetentativa(() => db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`));
+    comLockDeSetup(() => db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`));
   } catch (err) {
     const mensagem = err instanceof Error ? err.message : "";
     if (!mensagem.includes("duplicate column")) throw err;
@@ -110,6 +144,9 @@ function adicionarColunaSeFaltando(tabela: string, definicao: string) {
 // estoque nulo = produto sem controle de estoque (comportamento anterior, não bloqueia venda)
 adicionarColunaSeFaltando("produtos", "estoque INTEGER");
 adicionarColunaSeFaltando("produtos", "codigo_barras TEXT");
+// mostrar_site = aparece no site de pedidos. ativo=1 + mostrar_site=0 é um
+// produto que existe pro estoque/PDV mas não é vendido pra cliente online.
+adicionarColunaSeFaltando("produtos", "mostrar_site INTEGER NOT NULL DEFAULT 1");
 adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
 adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
 adicionarColunaSeFaltando("pedidos", "caixa_id INTEGER");
@@ -235,7 +272,7 @@ function semearSeVazio<T>(
     itens.forEach((item, index) => inserirUm(item, index));
   });
   try {
-    comRetentativa(() => transacao());
+    comLockDeSetup(() => transacao());
   } catch {
     // outro processo semeou ao mesmo tempo — tudo bem, ignora
   }
@@ -334,6 +371,7 @@ export type Produto = {
   ordem: number;
   estoque: number | null;
   codigo_barras: string | null;
+  mostrar_site: number;
   criado_em: string;
 };
 
@@ -341,4 +379,20 @@ export type Categoria = {
   nome: string;
   icone: string;
   ordem: number;
+};
+
+export type ClienteFiado = {
+  telefone: string;
+  nome: string;
+  saldo_devedor: number;
+};
+
+export type MovimentoSaldo = {
+  id: number;
+  telefone: string;
+  tipo: "fiado" | "pagamento" | "ajuste";
+  valor: number;
+  pedido_id: number | null;
+  observacao: string | null;
+  criado_em: string;
 };

@@ -3,12 +3,15 @@ import { db, type PedidoItem } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 import { verificarEstoque, baixarEstoque, mensagemEstoqueInsuficiente } from "@/lib/estoque";
 import { caixaAberto } from "@/lib/caixa";
+import { ajustarSaldoDevedor } from "@/lib/clientes";
 
-const FORMAS_VALIDAS = ["Dinheiro", "Cartão", "Pix"];
+const FORMAS_VALIDAS = ["Dinheiro", "Cartão", "Pix", "Fiado"];
 
 type NovaVendaBody = {
   itens: PedidoItem[];
   formaPagamento: string;
+  clienteNome?: string;
+  clienteTelefone?: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -30,6 +33,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Escolha uma forma de pagamento válida." }, { status: 400 });
   }
 
+  const clienteNome = body.clienteNome?.trim();
+  const clienteTelefone = body.clienteTelefone?.trim();
+  if (body.formaPagamento === "Fiado" && (!clienteNome || !clienteTelefone)) {
+    return NextResponse.json(
+      { error: "Fiado precisa de nome e telefone do cliente." },
+      { status: 400 }
+    );
+  }
+
   const erros = verificarEstoque(body.itens);
   if (erros.length > 0) {
     return NextResponse.json({ error: mensagemEstoqueInsuficiente(erros) }, { status: 409 });
@@ -41,17 +53,23 @@ export async function POST(request: NextRequest) {
     INSERT INTO pedidos
       (cliente_nome, cliente_telefone, endereco, observacoes, itens, total, status, origem, forma_pagamento, caixa_id)
     VALUES
-      ('Venda balcão', '-', '-', '', @itens, @total, 'entregue', 'pdv', @formaPagamento, @caixaId)
+      (@clienteNome, @clienteTelefone, '-', '', @itens, @total, 'entregue', 'pdv', @formaPagamento, @caixaId)
   `);
 
   const criarVenda = db.transaction(() => {
     const result = stmt.run({
+      clienteNome: clienteNome || "Venda balcão",
+      clienteTelefone: clienteTelefone || "-",
       itens: JSON.stringify(body.itens),
       total,
       formaPagamento: body.formaPagamento,
       caixaId: caixa.id,
     });
-    baixarEstoque(body.itens, { tipo: "venda_pdv", pedidoId: Number(result.lastInsertRowid) });
+    const pedidoId = Number(result.lastInsertRowid);
+    baixarEstoque(body.itens, { tipo: "venda_pdv", pedidoId });
+    if (body.formaPagamento === "Fiado" && clienteNome && clienteTelefone) {
+      ajustarSaldoDevedor(clienteTelefone, clienteNome, total, "fiado", pedidoId);
+    }
     return result;
   });
 

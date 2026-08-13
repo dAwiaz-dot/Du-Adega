@@ -4,7 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PedidoForm } from "@/components/PedidoForm";
 import { SocialFloat } from "@/components/SocialFloat";
-import { listarProdutosAtivos } from "@/lib/produtos";
+import { listarProdutosSite } from "@/lib/produtos";
 import { listarCategorias } from "@/lib/categorias";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  const produtos = listarProdutosAtivos();
+  const produtos = listarProdutosSite();
   const categorias = listarCategorias();
 
   return (

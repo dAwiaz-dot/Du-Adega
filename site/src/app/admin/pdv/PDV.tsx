@@ -10,7 +10,7 @@ import { AdminNav } from "../AdminNav";
 
 type Carrinho = Record<string, number>;
 
-const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix"] as const;
+const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix", "Fiado"] as const;
 
 function horaCurta(dataStr: string) {
   const [, hora] = dataStr.split(" ");
@@ -51,6 +51,8 @@ export function PDV({
   );
   const inputLeitorRef = useRef<HTMLInputElement>(null);
   const [formaPagamento, setFormaPagamento] = useState<(typeof FORMAS_PAGAMENTO)[number]>("Dinheiro");
+  const [clienteNomeFiado, setClienteNomeFiado] = useState("");
+  const [clienteTelefoneFiado, setClienteTelefoneFiado] = useState("");
   const [finalizando, setFinalizando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
   const [ultimaVenda, setUltimaVenda] = useState<{ id: number; total: number } | null>(null);
@@ -190,13 +192,22 @@ export function PDV({
 
   async function finalizarVenda() {
     if (itensCarrinho.length === 0) return;
+    if (formaPagamento === "Fiado" && (!clienteNomeFiado.trim() || !clienteTelefoneFiado.trim())) {
+      setErro("Informe nome e telefone do cliente pra vender fiado.");
+      return;
+    }
     setErro(null);
     setFinalizando(true);
     try {
       const res = await fetch("/api/pdv/vendas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itens: itensCarrinho, formaPagamento }),
+        body: JSON.stringify({
+          itens: itensCarrinho,
+          formaPagamento,
+          clienteNome: formaPagamento === "Fiado" ? clienteNomeFiado.trim() : undefined,
+          clienteTelefone: formaPagamento === "Fiado" ? clienteTelefoneFiado.trim() : undefined,
+        }),
       });
       const data = await res.json();
 
@@ -207,6 +218,8 @@ export function PDV({
 
       setUltimaVenda({ id: data.id, total: data.total });
       setCarrinho({});
+      setClienteNomeFiado("");
+      setClienteTelefoneFiado("");
       setResumo((atual) => {
         const linha = atual.porFormaPagamento.find((l) => l.forma_pagamento === formaPagamento);
         const novasLinhas = linha
@@ -460,7 +473,7 @@ export function PDV({
 
               <div className="mt-5 border-t border-borda pt-4">
                 <p className="text-xs font-medium text-foreground/60">Forma de pagamento</p>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="mt-2 grid grid-cols-4 gap-2">
                   {FORMAS_PAGAMENTO.map((forma) => (
                     <button
                       key={forma}
@@ -476,6 +489,26 @@ export function PDV({
                     </button>
                   ))}
                 </div>
+
+                {formaPagamento === "Fiado" && (
+                  <div className="mt-3 space-y-2 rounded-md bg-borda/20 p-3">
+                    <input
+                      placeholder="Nome do cliente"
+                      value={clienteNomeFiado}
+                      onChange={(e) => setClienteNomeFiado(e.target.value)}
+                      className="w-full rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+                    />
+                    <input
+                      placeholder="Telefone do cliente"
+                      value={clienteTelefoneFiado}
+                      onChange={(e) => setClienteTelefoneFiado(e.target.value)}
+                      className="w-full rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+                    />
+                    <p className="text-[11px] text-foreground/50">
+                      Fica registrado como dívida na aba Clientes.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-between rounded-lg bg-preto px-4 py-3 text-white">
