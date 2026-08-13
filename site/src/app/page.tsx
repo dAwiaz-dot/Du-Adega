@@ -4,6 +4,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { PedidoForm } from "@/components/PedidoForm";
 import { SocialFloat } from "@/components/SocialFloat";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { listarProdutosSite } from "@/lib/produtos";
 import { listarCategorias } from "@/lib/categorias";
 
@@ -97,6 +98,7 @@ export default function Home() {
 
       <Footer />
       <SocialFloat />
+      <InstallPrompt />
     </div>
   );
 }
