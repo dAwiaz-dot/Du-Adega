@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, type PedidoItem } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 import { verificarEstoque, baixarEstoque, mensagemEstoqueInsuficiente } from "@/lib/estoque";
+import { caixaAberto } from "@/lib/caixa";
 
 const FORMAS_VALIDAS = ["Dinheiro", "Cartão", "Pix"];
 
@@ -13,6 +14,11 @@ type NovaVendaBody = {
 export async function POST(request: NextRequest) {
   if (!(await isAdminRequest())) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+  }
+
+  const caixa = caixaAberto();
+  if (!caixa) {
+    return NextResponse.json({ error: "Abra o caixa antes de vender." }, { status: 400 });
   }
 
   const body = (await request.json()) as NovaVendaBody;
@@ -33,9 +39,9 @@ export async function POST(request: NextRequest) {
 
   const stmt = db.prepare(`
     INSERT INTO pedidos
-      (cliente_nome, cliente_telefone, endereco, observacoes, itens, total, status, origem, forma_pagamento)
+      (cliente_nome, cliente_telefone, endereco, observacoes, itens, total, status, origem, forma_pagamento, caixa_id)
     VALUES
-      ('Venda balcão', '-', '-', '', @itens, @total, 'entregue', 'pdv', @formaPagamento)
+      ('Venda balcão', '-', '-', '', @itens, @total, 'entregue', 'pdv', @formaPagamento, @caixaId)
   `);
 
   const criarVenda = db.transaction(() => {
@@ -43,8 +49,9 @@ export async function POST(request: NextRequest) {
       itens: JSON.stringify(body.itens),
       total,
       formaPagamento: body.formaPagamento,
+      caixaId: caixa.id,
     });
-    baixarEstoque(body.itens);
+    baixarEstoque(body.itens, { tipo: "venda_pdv", pedidoId: Number(result.lastInsertRowid) });
     return result;
   });
 

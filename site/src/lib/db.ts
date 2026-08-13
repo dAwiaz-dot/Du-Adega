@@ -12,9 +12,30 @@ export const db = globalForDb.db ?? new Database(dbPath);
 globalForDb.db = db;
 
 db.pragma("journal_mode = WAL");
-db.pragma("busy_timeout = 5000");
+db.pragma("busy_timeout = 8000");
 
-db.exec(`
+// Vários workers do build (ou do Next em dev) abrem essa mesma conexão de
+// arquivo ao mesmo tempo no primeiro boot. O busy_timeout já faz o SQLite
+// esperar a trava liberar, mas em picos de concorrência (9 workers) o erro
+// "database is locked" ainda escapa — essa função tenta de novo com um
+// pequeno backoff antes de desistir.
+function comRetentativa<T>(fn: () => T, tentativas = 6): T {
+  for (let i = 0; i < tentativas; i++) {
+    try {
+      return fn();
+    } catch (err) {
+      const mensagem = err instanceof Error ? err.message : "";
+      const travado = mensagem.includes("database is locked") || mensagem.includes("SQLITE_BUSY");
+      if (!travado || i === tentativas - 1) throw err;
+      const buffer = new SharedArrayBuffer(4);
+      Atomics.wait(new Int32Array(buffer), 0, 0, 150 * (i + 1));
+    }
+  }
+  throw new Error("inalcançável");
+}
+
+comRetentativa(() =>
+  db.exec(`
   CREATE TABLE IF NOT EXISTS pedidos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cliente_nome TEXT NOT NULL,
@@ -45,7 +66,29 @@ db.exec(`
     icone TEXT NOT NULL DEFAULT '🍹',
     ordem INTEGER NOT NULL DEFAULT 0
   );
-`);
+
+  CREATE TABLE IF NOT EXISTS caixa (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    aberto_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    fechado_em TEXT,
+    valor_inicial REAL NOT NULL,
+    valor_contado REAL,
+    observacoes TEXT,
+    status TEXT NOT NULL DEFAULT 'aberto'
+  );
+
+  CREATE TABLE IF NOT EXISTS estoque_movimentos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    produto_id TEXT NOT NULL,
+    tipo TEXT NOT NULL,
+    quantidade INTEGER NOT NULL,
+    estoque_resultante INTEGER NOT NULL,
+    pedido_id INTEGER,
+    observacao TEXT,
+    criado_em TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+  );
+`)
+);
 
 function colunaExiste(tabela: string, coluna: string): boolean {
   const colunas = db.prepare(`PRAGMA table_info(${tabela})`).all() as { name: string }[];
@@ -56,8 +99,10 @@ function adicionarColunaSeFaltando(tabela: string, definicao: string) {
   const [coluna] = definicao.trim().split(/\s+/);
   if (colunaExiste(tabela, coluna)) return;
   try {
-    db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`);
-  } catch {
+    comRetentativa(() => db.exec(`ALTER TABLE ${tabela} ADD COLUMN ${definicao}`));
+  } catch (err) {
+    const mensagem = err instanceof Error ? err.message : "";
+    if (!mensagem.includes("duplicate column")) throw err;
     // outro worker do build já adicionou a coluna ao mesmo tempo — tudo bem
   }
 }
@@ -66,6 +111,7 @@ function adicionarColunaSeFaltando(tabela: string, definicao: string) {
 adicionarColunaSeFaltando("produtos", "estoque INTEGER");
 adicionarColunaSeFaltando("pedidos", "origem TEXT NOT NULL DEFAULT 'online'");
 adicionarColunaSeFaltando("pedidos", "forma_pagamento TEXT");
+adicionarColunaSeFaltando("pedidos", "caixa_id INTEGER");
 
 const SEED_PRODUTOS = [
   {
@@ -188,7 +234,7 @@ function semearSeVazio<T>(
     itens.forEach((item, index) => inserirUm(item, index));
   });
   try {
-    transacao();
+    comRetentativa(() => transacao());
   } catch {
     // outro processo semeou ao mesmo tempo — tudo bem, ignora
   }
@@ -250,6 +296,28 @@ export type Pedido = {
   status: "novo" | "preparando" | "a_caminho" | "entregue" | "cancelado";
   origem: "online" | "pdv";
   forma_pagamento: string | null;
+  caixa_id: number | null;
+  criado_em: string;
+};
+
+export type Caixa = {
+  id: number;
+  aberto_em: string;
+  fechado_em: string | null;
+  valor_inicial: number;
+  valor_contado: number | null;
+  observacoes: string | null;
+  status: "aberto" | "fechado";
+};
+
+export type EstoqueMovimento = {
+  id: number;
+  produto_id: string;
+  tipo: "venda_online" | "venda_pdv" | "ajuste";
+  quantidade: number;
+  estoque_resultante: number;
+  pedido_id: number | null;
+  observacao: string | null;
   criado_em: string;
 };
 

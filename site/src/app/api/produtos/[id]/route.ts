@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 import { garantirCategoria } from "@/lib/categorias";
+import { registrarAjusteEstoque } from "@/lib/estoque";
 
 export async function PATCH(
   request: NextRequest,
@@ -38,7 +39,19 @@ export async function PATCH(
     return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
   }
 
+  let estoqueAntes: number | null = null;
+  if ("estoque" in body) {
+    const atual = db.prepare("SELECT estoque FROM produtos WHERE id = ?").get(id) as
+      | { estoque: number | null }
+      | undefined;
+    estoqueAntes = atual?.estoque ?? null;
+  }
+
   db.prepare(`UPDATE produtos SET ${campos.join(", ")} WHERE id = @id`).run(valores);
+
+  if ("estoque" in body && estoqueAntes !== null && typeof body.estoque === "number") {
+    registrarAjusteEstoque(id, estoqueAntes, body.estoque);
+  }
 
   if (typeof body.categoria === "string" && body.categoria.trim()) {
     garantirCategoria(body.categoria.trim());

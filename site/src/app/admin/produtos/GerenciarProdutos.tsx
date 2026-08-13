@@ -3,9 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import type { Produto } from "@/lib/db";
+import { ESTOQUE_BAIXO } from "@/lib/constantes";
 import { AdminNav } from "../AdminNav";
-
-const ESTOQUE_BAIXO = 5;
 
 type FormState = {
   id: string | null;

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       itens: JSON.stringify(body.itens),
       total,
     });
-    baixarEstoque(body.itens);
+    baixarEstoque(body.itens, { tipo: "venda_online", pedidoId: Number(result.lastInsertRowid) });
     return result;
   });
 

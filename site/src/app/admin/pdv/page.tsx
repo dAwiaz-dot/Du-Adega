@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { listarProdutosAtivos } from "@/lib/produtos";
 import { listarCategorias } from "@/lib/categorias";
 import { resumoVendasHoje } from "@/lib/pdv";
+import { caixaAberto, resumoCaixa } from "@/lib/caixa";
 import { AdminLogin } from "../AdminLogin";
 import { PDV } from "./PDV";
 
@@ -23,14 +24,18 @@ export default async function AdminPDVPage() {
 
   const produtos = listarProdutosAtivos();
   const categorias = listarCategorias();
-  const resumo = resumoVendasHoje();
+  const resumoHoje = resumoVendasHoje();
+  const caixa = caixaAberto();
+  const resumoCaixaAtual = caixa ? resumoCaixa(caixa.id) : null;
   const adminNome = cookieStore.get("adega_admin_nome")?.value ?? "Admin";
 
   return (
     <PDV
       produtosIniciais={produtos}
       categoriasIniciais={categorias}
-      resumoInicial={resumo}
+      resumoInicial={resumoHoje}
+      caixaInicial={caixa}
+      resumoCaixaInicial={resumoCaixaAtual}
       adminNome={adminNome}
     />
   );
