@@ -330,7 +330,7 @@ export function GerenciarProdutos({
           </div>
         </form>
 
-        <div className="mt-10 flex flex-wrap items-center gap-3">
+        <div className="mt-10 flex flex-wrap items-center gap-3 min-w-0">
           <input
             type="search"
             placeholder="Buscar produto..."
@@ -338,7 +338,7 @@ export function GerenciarProdutos({
             onChange={(e) => setBusca(e.target.value)}
             className="w-full max-w-xs rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
           />
-          <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto">
+          <div className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto">
             <button
               onClick={() => setCategoriaFiltro("todas")}
               className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${

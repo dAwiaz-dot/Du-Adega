@@ -332,7 +332,7 @@ export function PDV({
       ) : (
         <main className="mx-auto max-w-6xl px-6 py-8">
           <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-            <div>
+            <div className="min-w-0">
               <div className="relative mb-4">
                 <input
                   ref={inputLeitorRef}
