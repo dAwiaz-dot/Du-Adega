@@ -33,7 +33,7 @@ export function PedidoForm({
   const [pedidoId, setPedidoId] = useState<number | null>(null);
   const [linkWhatsApp, setLinkWhatsApp] = useState<string | null>(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState(categorias[0]);
-  const chipRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const itensCarrinho = useMemo(
     () =>
@@ -54,26 +54,6 @@ export function PedidoForm({
   const qtdTotalItens = itensCarrinho.reduce((s, i) => s + i.quantidade, 0);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setCategoriaAtiva(entry.target.id.replace("p-", ""));
-          }
-        });
-      },
-      { rootMargin: "-150px 0px -65% 0px", threshold: 0 }
-    );
-
-    categorias.forEach((categoria) => {
-      const el = document.getElementById(`p-${categoria}`);
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
     const alvos = document.querySelectorAll<HTMLElement>("[data-reveal]");
     const observer = new IntersectionObserver(
       (entries) => {
@@ -88,7 +68,7 @@ export function PedidoForm({
     );
     alvos.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [categoriaAtiva]);
 
   useEffect(() => {
     chipRefs.current[categoriaAtiva]?.scrollIntoView({
@@ -250,12 +230,13 @@ export function PedidoForm({
           {categorias.map((categoria) => {
             const ativa = categoria === categoriaAtiva;
             return (
-              <a
+              <button
                 key={categoria}
+                type="button"
                 ref={(el) => {
                   chipRefs.current[categoria] = el;
                 }}
-                href={`#p-${categoria}`}
+                onClick={() => setCategoriaAtiva(categoria)}
                 className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
                   ativa
                     ? "border-vermelho bg-vermelho text-white shadow-sm"
@@ -263,15 +244,17 @@ export function PedidoForm({
                 }`}
               >
                 {categoria}
-              </a>
+              </button>
             );
           })}
         </div>
       </nav>
 
       <div className="mt-8">
-        {categorias.map((categoria) => (
-          <div key={categoria} id={`p-${categoria}`} className="mb-8 scroll-mt-32">
+        {categorias
+          .filter((categoria) => categoria === categoriaAtiva)
+          .map((categoria) => (
+          <div key={categoria} className="mb-8 scroll-mt-32">
             <h2 className="flex items-center gap-2 text-vermelho font-semibold uppercase tracking-wide text-sm">
               {categoria}
             </h2>
