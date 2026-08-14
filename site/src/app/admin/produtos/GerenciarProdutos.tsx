@@ -42,6 +42,8 @@ export function GerenciarProdutos({
   const [salvando, setSalvando] = useState(false);
   const [enviandoFoto, setEnviandoFoto] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
+  const [busca, setBusca] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const categoriasExistentes = useMemo(
@@ -50,13 +52,19 @@ export function GerenciarProdutos({
   );
 
   const produtosPorCategoria = useMemo(() => {
+    const buscaNorm = busca.trim().toLowerCase();
+    const filtrados = produtos.filter(
+      (p) =>
+        (categoriaFiltro === "todas" || p.categoria === categoriaFiltro) &&
+        (!buscaNorm || p.nome.toLowerCase().includes(buscaNorm))
+    );
     const grupos: Record<string, Produto[]> = {};
-    for (const produto of produtos) {
+    for (const produto of filtrados) {
       grupos[produto.categoria] = grupos[produto.categoria] ?? [];
       grupos[produto.categoria].push(produto);
     }
     return grupos;
-  }, [produtos]);
+  }, [produtos, categoriaFiltro, busca]);
 
   function editar(produto: Produto) {
     setForm({
@@ -322,7 +330,42 @@ export function GerenciarProdutos({
           </div>
         </form>
 
-        <div className="mt-10 space-y-8">
+        <div className="mt-10 flex flex-wrap items-center gap-3">
+          <input
+            type="search"
+            placeholder="Buscar produto..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="w-full max-w-xs rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+          />
+          <div className="no-scrollbar flex flex-1 gap-2 overflow-x-auto">
+            <button
+              onClick={() => setCategoriaFiltro("todas")}
+              className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                categoriaFiltro === "todas"
+                  ? "border-vermelho bg-vermelho text-white"
+                  : "border-borda hover:border-vermelho hover:text-vermelho"
+              }`}
+            >
+              Todas
+            </button>
+            {categoriasExistentes.map((categoria) => (
+              <button
+                key={categoria}
+                onClick={() => setCategoriaFiltro(categoria)}
+                className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                  categoriaFiltro === categoria
+                    ? "border-vermelho bg-vermelho text-white"
+                    : "border-borda hover:border-vermelho hover:text-vermelho"
+                }`}
+              >
+                {categoria}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-8">
           {Object.entries(produtosPorCategoria).map(([categoria, itens]) => (
             <div key={categoria}>
               <h3 className="text-vermelho font-semibold uppercase tracking-wide text-sm">
@@ -412,9 +455,11 @@ export function GerenciarProdutos({
             </div>
           ))}
 
-          {produtos.length === 0 && (
+          {Object.keys(produtosPorCategoria).length === 0 && (
             <p className="text-center text-foreground/60 py-20">
-              Nenhum produto cadastrado ainda.
+              {produtos.length === 0
+                ? "Nenhum produto cadastrado ainda."
+                : "Nenhum produto encontrado com esse filtro/busca."}
             </p>
           )}
         </div>
