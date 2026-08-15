@@ -5,6 +5,20 @@ import Image from "next/image";
 import type { Produto, Categoria } from "@/lib/db";
 
 type Carrinho = Record<string, number>;
+type Tela = "categorias" | "produtos" | "checkout";
+
+function emojiCategoria(nome: string): string {
+  const n = nome.toLowerCase();
+  if (n.includes("vinho")) return "🍷";
+  if (n.includes("cerveja")) return "🍺";
+  if (n.includes("destilado") || n.includes("whisky") || n.includes("gin") || n.includes("vodka"))
+    return "🥃";
+  if (n.includes("gelo") || n.includes("carv")) return "🧊";
+  if (n.includes("água") || n.includes("agua") || n.includes("refri")) return "🥤";
+  if (n.includes("energ")) return "⚡";
+  if (n.includes("doce") || n.includes("snack") || n.includes("petisco")) return "🍿";
+  return "🛒";
+}
 
 export function PedidoForm({
   produtosIniciais,
@@ -23,6 +37,8 @@ export function PedidoForm({
     return [...ordenadas, ...semCategoria];
   }, [produtos, categoriasIniciais]);
 
+  const [tela, setTela] = useState<Tela>("categorias");
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
   const [carrinho, setCarrinho] = useState<Carrinho>({});
   const [clienteNome, setClienteNome] = useState("");
   const [clienteTelefone, setClienteTelefone] = useState("");
@@ -68,7 +84,7 @@ export function PedidoForm({
     );
     alvos.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, [categoriaAtiva]);
+  }, [categoriaAtiva, tela]);
 
   useEffect(() => {
     chipRefs.current[categoriaAtiva]?.scrollIntoView({
@@ -84,6 +100,11 @@ export function PedidoForm({
       const novaQtd = Math.max(0, atualQtd + delta);
       return { ...atual, [id]: novaQtd };
     });
+  }
+
+  function abrirCategoria(categoria: string) {
+    setCategoriaAtiva(categoria);
+    setTela("produtos");
   }
 
   async function enviarPedido(e: React.FormEvent) {
@@ -141,6 +162,7 @@ export function PedidoForm({
       setClienteTelefone("");
       setEndereco("");
       setObservacoes("");
+      setTela("categorias");
     } catch {
       setErro("Erro de conexão. Tente novamente.");
     } finally {
@@ -221,201 +243,400 @@ export function PedidoForm({
   }
 
   return (
-    <form onSubmit={enviarPedido} className={qtdTotalItens > 0 ? "pb-28" : ""}>
-      <nav
-        aria-label="Categorias"
-        className="no-scrollbar sticky top-[64px] z-10 -mx-6 overflow-x-auto border-b border-borda bg-card px-6 py-3"
-      >
-        <div className="flex gap-2">
-          {categorias.map((categoria) => {
-            const ativa = categoria === categoriaAtiva;
-            return (
-              <button
-                key={categoria}
-                type="button"
-                ref={(el) => {
-                  chipRefs.current[categoria] = el;
-                }}
-                onClick={() => setCategoriaAtiva(categoria)}
-                className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
-                  ativa
-                    ? "border-vermelho bg-vermelho text-white shadow-sm"
-                    : "border-borda hover:border-vermelho hover:text-vermelho"
-                }`}
-              >
-                {categoria}
-              </button>
-            );
-          })}
+    <form onSubmit={enviarPedido} className={qtdTotalItens > 0 && tela !== "checkout" ? "pb-28" : ""}>
+      {tela === "categorias" && (
+        <div className="mt-2">
+          <h2 className="text-lg font-semibold text-preto">Escolha uma categoria</h2>
+          <p className="mt-1 text-sm text-foreground/60">
+            Toque numa categoria pra ver os produtos.
+          </p>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {categorias.map((categoria) => {
+              const produtosCategoria = produtos.filter((p) => p.categoria === categoria);
+              const qtdNoCarrinho = produtosCategoria.reduce(
+                (s, p) => s + (carrinho[p.id] ?? 0),
+                0
+              );
+              const capa = produtosCategoria.find((p) => p.imagem)?.imagem ?? null;
+              return (
+                <button
+                  key={categoria}
+                  type="button"
+                  data-reveal
+                  onClick={() => abrirCategoria(categoria)}
+                  className="reveal group relative overflow-hidden rounded-xl border border-borda bg-background text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-vermelho hover:shadow-md active:scale-95"
+                >
+                  {qtdNoCarrinho > 0 && (
+                    <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-vermelho text-xs font-bold text-white animate-pop">
+                      {qtdNoCarrinho}
+                    </span>
+                  )}
+                  <div className="relative flex h-24 items-center justify-center overflow-hidden bg-preto">
+                    {capa ? (
+                      <Image
+                        src={capa}
+                        alt=""
+                        fill
+                        sizes="200px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                    ) : (
+                      <span className="text-4xl">{emojiCategoria(categoria)}</span>
+                    )}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 bg-gradient-to-t from-preto/70 via-transparent to-transparent"
+                    />
+                  </div>
+                  <div className="p-3">
+                    <p className="truncate font-medium">{categoria}</p>
+                    <p className="text-xs text-foreground/60">
+                      {produtosCategoria.length}{" "}
+                      {produtosCategoria.length === 1 ? "item" : "itens"}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </nav>
+      )}
 
-      <div className="mt-8">
-        {categorias
-          .filter((categoria) => categoria === categoriaAtiva)
-          .map((categoria) => (
-          <div key={categoria} className="mb-8 scroll-mt-32">
-            <h2 className="flex items-center gap-2 text-vermelho font-semibold uppercase tracking-wide text-sm">
-              {categoria}
-            </h2>
-            <div className="mt-3 space-y-3">
-              {produtos
-                .filter((p) => p.categoria === categoria)
-                .map((produto, index) => {
-                  const quantidade = carrinho[produto.id] ?? 0;
-                  return (
-                    <div
-                      key={produto.id}
-                      data-reveal
-                      style={{ transitionDelay: `${Math.min(index, 6) * 60}ms` }}
-                      className={`group reveal flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                        quantidade > 0 ? "border-vermelho" : "border-borda"
-                      }`}
-                    >
-                      <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
-                        {produto.imagem ? (
-                          <Image
-                            src={produto.imagem}
-                            alt={produto.nome}
-                            fill
-                            sizes="56px"
-                            className="object-cover transition-transform duration-300 group-hover:scale-110"
-                          />
-                        ) : (
-                          <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
-                        )}
-                        <span
-                          aria-hidden
-                          className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <p className="font-medium">{produto.nome}</p>
-                          {produto.destaque && (
-                            <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
-                              {produto.destaque}
-                            </span>
+      {tela === "produtos" && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setTela("categorias")}
+            className="mb-3 flex items-center gap-1 text-sm font-medium text-foreground/70 transition hover:text-vermelho"
+          >
+            ← Categorias
+          </button>
+
+          <nav
+            aria-label="Categorias"
+            className="no-scrollbar sticky top-[64px] z-10 -mx-6 overflow-x-auto border-b border-borda bg-card px-6 py-3"
+          >
+            <div className="flex gap-2">
+              {categorias.map((categoria) => {
+                const ativa = categoria === categoriaAtiva;
+                return (
+                  <button
+                    key={categoria}
+                    type="button"
+                    ref={(el) => {
+                      chipRefs.current[categoria] = el;
+                    }}
+                    onClick={() => setCategoriaAtiva(categoria)}
+                    className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+                      ativa
+                        ? "border-vermelho bg-vermelho text-white shadow-sm"
+                        : "border-borda hover:border-vermelho hover:text-vermelho"
+                    }`}
+                  >
+                    {categoria}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+
+          <div className="mt-8">
+            <div className="mb-8 scroll-mt-32">
+              <h2 className="flex items-center gap-2 text-vermelho font-semibold uppercase tracking-wide text-sm">
+                {categoriaAtiva}
+              </h2>
+              <div className="mt-3 space-y-3">
+                {produtos
+                  .filter((p) => p.categoria === categoriaAtiva)
+                  .map((produto, index) => {
+                    const quantidade = carrinho[produto.id] ?? 0;
+                    return (
+                      <div
+                        key={produto.id}
+                        data-reveal
+                        style={{ transitionDelay: `${Math.min(index, 6) * 60}ms` }}
+                        className={`group reveal flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                          quantidade > 0 ? "border-vermelho" : "border-borda"
+                        }`}
+                      >
+                        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
+                          {produto.imagem ? (
+                            <Image
+                              src={produto.imagem}
+                              alt={produto.nome}
+                              fill
+                              sizes="56px"
+                              className="object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                          ) : (
+                            <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
                           )}
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+                          />
                         </div>
-                        <p className="text-sm text-foreground/60">
-                          R$ {produto.preco.toFixed(2)}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p className="font-medium">{produto.nome}</p>
+                            {produto.destaque && (
+                              <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
+                                {produto.destaque}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-foreground/60">
+                            R$ {produto.preco.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => alterarQuantidade(produto.id, -1)}
+                            className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
+                          >
+                            −
+                          </button>
+                          <span
+                            key={quantidade}
+                            className="w-6 text-center animate-pop"
+                          >
+                            {quantidade}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => alterarQuantidade(produto.id, 1)}
+                            className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tela === "checkout" && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setTela("produtos")}
+            className="mb-3 flex items-center gap-1 text-sm font-medium text-foreground/70 transition hover:text-vermelho"
+          >
+            ← Voltar e adicionar mais itens
+          </button>
+
+          <div className="rounded-lg border border-borda bg-background p-6">
+            <h2 className="font-semibold text-preto">Seu pedido</h2>
+            <div className="mt-4 space-y-3">
+              {itensCarrinho.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 border-b border-borda pb-3 last:border-0 last:pb-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{item.nome}</p>
+                    <p className="text-sm text-foreground/60">R$ {item.preco.toFixed(2)} un.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => alterarQuantidade(item.id, -1)}
+                      className="h-7 w-7 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 active:scale-90"
+                    >
+                      −
+                    </button>
+                    <span className="w-5 text-center">{item.quantidade}</span>
+                    <button
+                      type="button"
+                      onClick={() => alterarQuantidade(item.id, 1)}
+                      className="h-7 w-7 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 active:scale-90"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-sm font-medium">
+                    R$ {(item.preco * item.quantidade).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-borda bg-background p-6">
+            <h2 className="font-semibold text-preto">Seus dados</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <input
+                required
+                placeholder="Nome completo"
+                value={clienteNome}
+                onChange={(e) => setClienteNome(e.target.value)}
+                className="rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              />
+              <input
+                required
+                placeholder="Telefone / WhatsApp"
+                value={clienteTelefone}
+                onChange={(e) => setClienteTelefone(e.target.value)}
+                className="rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              />
+            </div>
+            <input
+              required
+              placeholder="Endereço de entrega"
+              value={endereco}
+              onChange={(e) => setEndereco(e.target.value)}
+              className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+            />
+            <p className="mt-1.5 text-xs text-foreground/70">
+              📍 Entregamos em Alfenas-MG e região.
+            </p>
+            <textarea
+              placeholder="Observações (opcional)"
+              value={observacoes}
+              onChange={(e) => setObservacoes(e.target.value)}
+              className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+              rows={3}
+            />
+          </div>
+
+          <div className="mt-6 flex items-center justify-between rounded-lg bg-preto px-6 py-4 text-white">
+            <span className="font-semibold">Total</span>
+            <span key={total} className="text-xl font-semibold text-vermelho-vivo animate-pop">
+              R$ {total.toFixed(2)}
+            </span>
+          </div>
+          <p className="mt-2 text-center text-xs text-foreground/70">
+            💳 Forma de pagamento combinada direto com a loja na entrega.
+          </p>
+
+          {erro && <p className="mt-4 animate-fade-up text-red-600 text-sm">{erro}</p>}
+
+          <button
+            type="submit"
+            disabled={enviando}
+            className="group relative mt-4 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto transition hover:brightness-95 hover:shadow-lg hover:shadow-vermelho-vivo/30 active:scale-[0.98] disabled:opacity-60"
+          >
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[130%] transition-transform duration-700 group-hover:translate-x-[130%]"
+            />
+            {enviando && (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-preto/30 border-t-preto" />
+            )}
+            <span className="relative">
+              {enviando ? "Enviando..." : "Confirmar pedido"}
+            </span>
+          </button>
+        </div>
+      )}
+
+      {carrinhoAberto && (
+        <div
+          className="fixed inset-0 z-30 flex items-end justify-center bg-black/50 sm:items-center"
+          onClick={() => setCarrinhoAberto(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[85vh] w-full max-w-md animate-slide-up overflow-y-auto rounded-t-2xl bg-background p-6 sm:rounded-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-preto">Seu carrinho</h2>
+              <button
+                type="button"
+                onClick={() => setCarrinhoAberto(false)}
+                className="text-xl text-foreground/50 transition hover:text-vermelho"
+                aria-label="Fechar carrinho"
+              >
+                ✕
+              </button>
+            </div>
+
+            {itensCarrinho.length === 0 ? (
+              <p className="mt-6 text-center text-foreground/60">Seu carrinho está vazio.</p>
+            ) : (
+              <>
+                <div className="mt-4 space-y-3">
+                  {itensCarrinho.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 border-b border-borda pb-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{item.nome}</p>
+                        <p className="text-sm text-foreground/60">R$ {item.preco.toFixed(2)} un.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => alterarQuantidade(produto.id, -1)}
-                          className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
+                          onClick={() => alterarQuantidade(item.id, -1)}
+                          className="h-7 w-7 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 active:scale-90"
                         >
                           −
                         </button>
-                        <span
-                          key={quantidade}
-                          className="w-6 text-center animate-pop"
-                        >
-                          {quantidade}
-                        </span>
+                        <span className="w-5 text-center">{item.quantidade}</span>
                         <button
                           type="button"
-                          onClick={() => alterarQuantidade(produto.id, 1)}
-                          className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
+                          onClick={() => alterarQuantidade(item.id, 1)}
+                          className="h-7 w-7 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 active:scale-90"
                         >
                           +
                         </button>
                       </div>
+                      <span className="w-16 shrink-0 text-right text-sm font-medium">
+                        R$ {(item.preco * item.quantidade).toFixed(2)}
+                      </span>
                     </div>
-                  );
-                })}
-            </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between font-semibold">
+                  <span>Total</span>
+                  <span key={total} className="animate-pop text-vermelho">
+                    R$ {total.toFixed(2)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCarrinhoAberto(false);
+                    setTela("checkout");
+                  }}
+                  className="mt-4 w-full rounded-full bg-vermelho-vivo px-6 py-3 font-semibold text-preto transition hover:brightness-95 active:scale-[0.98]"
+                >
+                  Continuar pedido
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setCarrinhoAberto(false)}
+              className="mt-2 w-full rounded-full border border-borda px-6 py-2 text-sm font-medium text-foreground/70 transition hover:border-vermelho hover:text-vermelho"
+            >
+              Continuar comprando
+            </button>
           </div>
-        ))}
-      </div>
-
-      <div
-        id="checkout"
-        data-reveal
-        className="reveal scroll-mt-32 rounded-lg border border-borda bg-background p-6"
-      >
-        <h2 className="font-semibold text-preto">Seus dados</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <input
-            required
-            placeholder="Nome completo"
-            value={clienteNome}
-            onChange={(e) => setClienteNome(e.target.value)}
-            className="rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
-          />
-          <input
-            required
-            placeholder="Telefone / WhatsApp"
-            value={clienteTelefone}
-            onChange={(e) => setClienteTelefone(e.target.value)}
-            className="rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
-          />
         </div>
-        <input
-          required
-          placeholder="Endereço de entrega"
-          value={endereco}
-          onChange={(e) => setEndereco(e.target.value)}
-          className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
-        />
-        <p className="mt-1.5 text-xs text-foreground/70">
-          📍 Entregamos em Alfenas-MG e região.
-        </p>
-        <textarea
-          placeholder="Observações (opcional)"
-          value={observacoes}
-          onChange={(e) => setObservacoes(e.target.value)}
-          className="mt-4 w-full rounded-md border border-borda px-4 py-2 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
-          rows={3}
-        />
-      </div>
+      )}
 
-      <div className="mt-6 flex items-center justify-between rounded-lg bg-preto px-6 py-4 text-white">
-        <span className="font-semibold">Total</span>
-        <span key={total} className="text-xl font-semibold text-vermelho-vivo animate-pop">
-          R$ {total.toFixed(2)}
-        </span>
-      </div>
-      <p className="mt-2 text-center text-xs text-foreground/70">
-        💳 Forma de pagamento combinada direto com a loja na entrega.
-      </p>
-
-      {erro && <p className="mt-4 animate-fade-up text-red-600 text-sm">{erro}</p>}
-
-      <button
-        type="submit"
-        disabled={enviando}
-        className="group relative mt-4 flex w-full items-center justify-center gap-2 overflow-hidden rounded-full bg-vermelho-vivo px-8 py-3 font-semibold text-preto transition hover:brightness-95 hover:shadow-lg hover:shadow-vermelho-vivo/30 active:scale-[0.98] disabled:opacity-60"
-      >
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-[130%] transition-transform duration-700 group-hover:translate-x-[130%]"
-        />
-        {enviando && (
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-preto/30 border-t-preto" />
-        )}
-        <span className="relative">
-          {enviando ? "Enviando..." : "Confirmar pedido"}
-        </span>
-      </button>
-
-      {qtdTotalItens > 0 && (
-        <a
-          href="#checkout"
+      {qtdTotalItens > 0 && tela !== "checkout" && (
+        <button
+          type="button"
+          onClick={() => setCarrinhoAberto(true)}
           className="fixed inset-x-0 bottom-0 z-20 animate-slide-up border-t border-vermelho-vivo/40 bg-vermelho px-6 py-4 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.3)] transition hover:brightness-110 active:scale-[0.99]"
         >
           <div className="mx-auto flex max-w-5xl items-center justify-between">
             <span className="font-medium">
-              {qtdTotalItens} {qtdTotalItens === 1 ? "item" : "itens"} no carrinho
+              🛒 {qtdTotalItens} {qtdTotalItens === 1 ? "item" : "itens"} no carrinho
             </span>
             <span key={total} className="animate-pop rounded-full bg-white/15 px-4 py-1.5 font-semibold">
-              R$ {total.toFixed(2)} · Finalizar
+              R$ {total.toFixed(2)} · Ver carrinho
             </span>
           </div>
-        </a>
+        </button>
       )}
     </form>
   );
