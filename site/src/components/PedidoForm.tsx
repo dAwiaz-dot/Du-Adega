@@ -50,7 +50,14 @@ export function PedidoForm({
   const [pedidoId, setPedidoId] = useState<number | null>(null);
   const [linkWhatsApp, setLinkWhatsApp] = useState<string | null>(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState(categorias[0]);
+  const [busca, setBusca] = useState("");
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const resultadosBusca = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (!termo) return [];
+    return produtos.filter((p) => p.nome.toLowerCase().includes(termo));
+  }, [busca, produtos]);
 
   const itensCarrinho = useMemo(
     () =>
@@ -89,6 +96,74 @@ export function PedidoForm({
   function abrirCategoria(categoria: string) {
     setCategoriaAtiva(categoria);
     setTela("produtos");
+  }
+
+  function renderProdutoRow(produto: Produto, index: number) {
+    const quantidade = carrinho[produto.id] ?? 0;
+    return (
+      <div
+        key={produto.id}
+        style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
+        className={`group animate-fade-up flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+          quantidade > 0 ? "border-vermelho" : "border-borda"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setProdutoDetalhe(produto)}
+          className="flex min-w-0 flex-1 items-center gap-4 text-left"
+        >
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
+            {produto.imagem ? (
+              <Image
+                src={produto.imagem}
+                alt={produto.nome}
+                fill
+                sizes="56px"
+                className="object-cover transition-transform duration-300 group-hover:scale-110"
+              />
+            ) : (
+              <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
+            )}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="font-medium">{produto.nome}</p>
+              {produto.destaque && (
+                <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
+                  {produto.destaque}
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-foreground/60">R$ {produto.preco.toFixed(2)}</p>
+            <p className="text-xs text-foreground/50">{produto.categoria}</p>
+          </div>
+        </button>
+        <div className="flex shrink-0 items-center gap-3">
+          <button
+            type="button"
+            onClick={() => alterarQuantidade(produto.id, -1)}
+            className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
+          >
+            −
+          </button>
+          <span key={quantidade} className="w-6 text-center animate-pop">
+            {quantidade}
+          </span>
+          <button
+            type="button"
+            onClick={() => alterarQuantidade(produto.id, 1)}
+            className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
+          >
+            +
+          </button>
+        </div>
+      </div>
+    );
   }
 
   async function enviarPedido(e: React.FormEvent) {
@@ -232,8 +307,35 @@ export function PedidoForm({
         <div className="mt-2">
           <h2 className="text-lg font-semibold text-preto">Escolha uma categoria</h2>
           <p className="mt-1 text-sm text-foreground/60">
-            Toque numa categoria pra ver os produtos.
+            Toque numa categoria pra ver os produtos, ou busque pelo nome.
           </p>
+
+          <div className="relative mt-4">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-foreground/40">
+              🔍
+            </span>
+            <input
+              type="search"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Buscar produto pelo nome..."
+              className="w-full rounded-full border border-borda bg-background py-2.5 pl-11 pr-4 transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
+            />
+          </div>
+
+          {busca.trim() ? (
+            <div className="mt-6">
+              {resultadosBusca.length === 0 ? (
+                <p className="mt-6 text-center text-foreground/60">
+                  Nenhum produto encontrado pra &ldquo;{busca.trim()}&rdquo;.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {resultadosBusca.map((produto, index) => renderProdutoRow(produto, index))}
+                </div>
+              )}
+            </div>
+          ) : (
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             {categorias.map((categoria, index) => {
               const produtosCategoria = produtos.filter((p) => p.categoria === categoria);
@@ -283,6 +385,7 @@ export function PedidoForm({
               );
             })}
           </div>
+          )}
         </div>
       )}
 
@@ -332,77 +435,7 @@ export function PedidoForm({
               <div className="mt-3 space-y-3">
                 {produtos
                   .filter((p) => p.categoria === categoriaAtiva)
-                  .map((produto, index) => {
-                    const quantidade = carrinho[produto.id] ?? 0;
-                    return (
-                      <div
-                        key={produto.id}
-                        style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
-                        className={`group animate-fade-up flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                          quantidade > 0 ? "border-vermelho" : "border-borda"
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => setProdutoDetalhe(produto)}
-                          className="flex min-w-0 flex-1 items-center gap-4 text-left"
-                        >
-                          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
-                            {produto.imagem ? (
-                              <Image
-                                src={produto.imagem}
-                                alt={produto.nome}
-                                fill
-                                sizes="56px"
-                                className="object-cover transition-transform duration-300 group-hover:scale-110"
-                              />
-                            ) : (
-                              <span className="text-white/60">{produto.nome.charAt(0).toUpperCase()}</span>
-                            )}
-                            <span
-                              aria-hidden
-                              className="pointer-events-none absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-shimmer"
-                            />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <p className="font-medium">{produto.nome}</p>
-                              {produto.destaque && (
-                                <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
-                                  {produto.destaque}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-foreground/60">
-                              R$ {produto.preco.toFixed(2)}
-                            </p>
-                          </div>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => alterarQuantidade(produto.id, -1)}
-                            className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
-                          >
-                            −
-                          </button>
-                          <span
-                            key={quantidade}
-                            className="w-6 text-center animate-pop"
-                          >
-                            {quantidade}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => alterarQuantidade(produto.id, 1)}
-                            className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  .map((produto, index) => renderProdutoRow(produto, index))}
               </div>
             </div>
           </div>
