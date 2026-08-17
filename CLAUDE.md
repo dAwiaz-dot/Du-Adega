@@ -4,14 +4,17 @@
 
 ## Sobre
 
-Site para uma adega em Alfenas-MG (nome e identidade visual ainda não
-definidos pelo cliente) com três frentes: página institucional (landing),
-página de pedidos online pro cliente final, e painel admin pra visualizar
-os pedidos recebidos.
+Site da Du Bebidas, adega em Alfenas-MG, com três frentes: página
+institucional (landing), página de pedidos online pro cliente final, e
+painel admin completo (pedidos, produtos, categorias, estoque, PDV, caixa,
+clientes fiado). Em produção desde ~2026-08, com catálogo real gerenciado
+pelo cliente direto no painel admin.
+
+**URL de produção:** https://du-adega-production.up.railway.app
 
 ## Tipo
 
-Cliente novo
+Cliente ativo, site em produção
 
 ## Entregas previstas
 
@@ -35,27 +38,25 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
   perfil. Paleta em `site/src/app/globals.css`: preto `#0d0d0d` + vermelho
   `#c8102e` / `#ff3b4e`. A pasta do projeto continua se chamando
   `Adega-Alfenas` (nome interno), mas o site e os textos usam "Du Bebidas".
-  Logo em alta resolução ainda não recebida — só temos os prints de baixa
-  qualidade enviados pelo cliente.
-- **Catálogo de produtos é fictício.** `site/src/data/produtos.ts` tem
-  produtos de exemplo (vinhos, cervejas, destilados, gelo/carvão,
-  água/refrigerante) só pra validar o fluxo. Substituir pelos produtos
-  reais da adega antes de ir pro ar. Cada produto tem campo opcional
-  `imagem` — ainda não usado (cards mostram emoji da categoria via
-  `categoriaIcone`); trocar por foto real assim que tiver.
+- **Catálogo é real, não fictício.** Gerenciado pelo cliente direto em
+  `/admin/produtos` — só nesse dia (2026-08) já passava de 200 produtos em
+  ~30 categorias (bebidas, salgadinhos, doces, cigarros, etc.), com fotos
+  reais enviadas via upload (`/api/upload`, salvas em `uploads/` ao lado
+  do banco, servidas por `/api/uploads/[filename]`). Categorias e produtos
+  são 100% dados de banco (`categorias`/`produtos` no SQLite) — não há
+  mais arquivo estático de seed em uso; o `SEED_PRODUTOS`/`SEED_CATEGORIAS`
+  em `site/src/lib/db.ts` só roda no primeiro boot de um banco vazio (ex:
+  ambiente local do zero).
 - **Logo recriada, não é a original.** `site/public/logo-du-bebidas.svg`
   foi desenhada do zero a partir dos prints (placa da loja + foto de
   perfil do Instagram), não é o arquivo oficial do cliente. Trocar se ele
-  mandar a logo em alta resolução.
-- **Layout estilo delivery (iFood/Zé Delivery):** header sticky com logo,
-  chips de categoria com scroll horizontal e âncoras, cards de produto com
-  thumbnail, carrinho flutuante fixo no rodapé da página `/pedido` quando
-  há itens selecionados.
-- **Fotos reais pendentes.** Pasta `site/public/fotos-instagram/` criada
-  pra receber fotos baixadas manualmente do Instagram (@du_bebidas.26) —
-  não é possível fazer scraping automático das imagens de lá (perfil
-  exige login pra servir imagens). Quando o cliente/agência colocar fotos
-  ali, trocar os ícones de categoria nos cards por elas.
+  mandar a logo em alta resolução. (Ainda não recebida até 2026-08-17.)
+- **Layout estilo delivery (iFood/Zé Delivery):** o pedido acontece direto
+  na home (`/`), em três telas dentro de `PedidoForm.tsx` — categorias
+  (cards com foto + busca por nome) → produtos da categoria (chips pra
+  trocar rápido, toca no produto abre balão com descrição/foto grande) →
+  checkout (dados + confirmação). Carrinho fica num botão flutuante que
+  abre modal, com opção de remover item.
 - **Stack:** Next.js 16 (App Router) + Tailwind v4 + `better-sqlite3` como
   banco (`site/src/lib/db.ts`). Caminho do arquivo configurável via
   `DB_PATH` (padrão `./pedidos.sqlite3` se não definida).
@@ -64,9 +65,10 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
   httpOnly `adega_admin`. Sem hash de senha — suficiente pro MVP, mas não
   é autenticação robusta.
 - **Rotas:**
-  - `/` — landing page
-  - `/pedido` — pedido do cliente (carrinho simples, sem login)
-  - `/admin` — painel de pedidos (protegido por senha)
+  - `/` — landing page + pedido do cliente (`/pedido` só redireciona pra
+    cá, mantido por compatibilidade com links antigos)
+  - `/admin` — painel: pedidos, produtos, categorias, estoque, PDV, caixa,
+    clientes fiado (tudo protegido por senha)
 
 ## Deploy (Railway)
 

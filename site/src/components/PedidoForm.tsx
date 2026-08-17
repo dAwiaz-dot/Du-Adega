@@ -93,6 +93,12 @@ export function PedidoForm({
     });
   }
 
+  function removerItem(id: string) {
+    setCarrinho((atual) =>
+      Object.fromEntries(Object.entries(atual).filter(([itemId]) => itemId !== id))
+    );
+  }
+
   function abrirCategoria(categoria: string) {
     setCategoriaAtiva(categoria);
     setTela("produtos");
@@ -481,6 +487,14 @@ export function PedidoForm({
                   <span className="w-16 shrink-0 text-right text-sm font-medium">
                     R$ {(item.preco * item.quantidade).toFixed(2)}
                   </span>
+                  <button
+                    type="button"
+                    onClick={() => removerItem(item.id)}
+                    aria-label={`Remover ${item.nome}`}
+                    className="shrink-0 text-foreground/40 transition hover:text-vermelho"
+                  >
+                    ✕
+                  </button>
                 </div>
               ))}
             </div>
@@ -699,6 +713,14 @@ export function PedidoForm({
                       <span className="w-16 shrink-0 text-right text-sm font-medium">
                         R$ {(item.preco * item.quantidade).toFixed(2)}
                       </span>
+                      <button
+                        type="button"
+                        onClick={() => removerItem(item.id)}
+                        aria-label={`Remover ${item.nome}`}
+                        className="shrink-0 text-foreground/40 transition hover:text-vermelho"
+                      >
+                        ✕
+                      </button>
                     </div>
                   ))}
                 </div>
