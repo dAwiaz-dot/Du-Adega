@@ -51,7 +51,10 @@ export function PedidoForm({
   const [linkWhatsApp, setLinkWhatsApp] = useState<string | null>(null);
   const [categoriaAtiva, setCategoriaAtiva] = useState(categorias[0]);
   const [busca, setBusca] = useState("");
+  const [ultimoProdutoId, setUltimoProdutoId] = useState<string | null>(null);
   const chipRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const produtoRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const chipsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const resultadosBusca = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -104,11 +107,36 @@ export function PedidoForm({
     setTela("produtos");
   }
 
+  function voltarParaItem(id: string | null) {
+    if (!id) return;
+    requestAnimationFrame(() => {
+      produtoRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
+
+  function fecharDetalheProduto() {
+    const id = produtoDetalhe?.id ?? null;
+    setProdutoDetalhe(null);
+    voltarParaItem(id);
+  }
+
+  function voltarParaProdutos() {
+    setTela("produtos");
+    voltarParaItem(ultimoProdutoId);
+  }
+
+  function scrollChips(delta: number) {
+    chipsScrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  }
+
   function renderProdutoRow(produto: Produto, index: number) {
     const quantidade = carrinho[produto.id] ?? 0;
     return (
       <div
         key={produto.id}
+        ref={(el) => {
+          produtoRefs.current[produto.id] = el;
+        }}
         style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
         className={`group animate-fade-up flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
           quantidade > 0 ? "border-vermelho" : "border-borda"
@@ -116,7 +144,10 @@ export function PedidoForm({
       >
         <button
           type="button"
-          onClick={() => setProdutoDetalhe(produto)}
+          onClick={() => {
+            setUltimoProdutoId(produto.id);
+            setProdutoDetalhe(produto);
+          }}
           className="flex min-w-0 flex-1 items-center gap-4 text-left"
         >
           <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
@@ -405,33 +436,52 @@ export function PedidoForm({
             ← Categorias
           </button>
 
-          <nav
-            aria-label="Categorias"
-            className="no-scrollbar sticky top-[64px] z-10 -mx-6 overflow-x-auto border-b border-borda bg-card px-6 py-3"
-          >
-            <div className="flex gap-2">
-              {categorias.map((categoria) => {
-                const ativa = categoria === categoriaAtiva;
-                return (
-                  <button
-                    key={categoria}
-                    type="button"
-                    ref={(el) => {
-                      chipRefs.current[categoria] = el;
-                    }}
-                    onClick={() => setCategoriaAtiva(categoria)}
-                    className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
-                      ativa
-                        ? "border-vermelho bg-vermelho text-white shadow-sm"
-                        : "border-borda hover:border-vermelho hover:text-vermelho"
-                    }`}
-                  >
-                    {categoria}
-                  </button>
-                );
-              })}
-            </div>
-          </nav>
+          <div className="sticky top-[64px] z-10 -mx-6">
+            <nav
+              aria-label="Categorias"
+              ref={chipsScrollRef}
+              className="no-scrollbar overflow-x-auto border-b border-borda bg-card px-11 py-3"
+            >
+              <div className="flex gap-2">
+                {categorias.map((categoria) => {
+                  const ativa = categoria === categoriaAtiva;
+                  return (
+                    <button
+                      key={categoria}
+                      type="button"
+                      ref={(el) => {
+                        chipRefs.current[categoria] = el;
+                      }}
+                      onClick={() => setCategoriaAtiva(categoria)}
+                      className={`flex shrink-0 items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-200 ${
+                        ativa
+                          ? "border-vermelho bg-vermelho text-white shadow-sm"
+                          : "border-borda hover:border-vermelho hover:text-vermelho"
+                      }`}
+                    >
+                      {categoria}
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+            <button
+              type="button"
+              onClick={() => scrollChips(-160)}
+              aria-label="Categorias anteriores"
+              className="absolute left-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-borda bg-background/95 text-foreground/70 shadow-sm transition hover:border-vermelho hover:text-vermelho active:scale-90"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollChips(160)}
+              aria-label="Próximas categorias"
+              className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-borda bg-background/95 text-foreground/70 shadow-sm transition hover:border-vermelho hover:text-vermelho active:scale-90"
+            >
+              ›
+            </button>
+          </div>
 
           <div className="mt-8">
             <div className="mb-8 scroll-mt-32">
@@ -452,7 +502,7 @@ export function PedidoForm({
         <div>
           <button
             type="button"
-            onClick={() => setTela("produtos")}
+            onClick={voltarParaProdutos}
             className="mb-3 flex items-center gap-1 text-sm font-medium text-foreground/70 transition hover:text-vermelho"
           >
             ← Voltar e adicionar mais itens
@@ -571,7 +621,7 @@ export function PedidoForm({
       {produtoDetalhe && (
         <div
           className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 sm:items-center"
-          onClick={() => setProdutoDetalhe(null)}
+          onClick={fecharDetalheProduto}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -593,7 +643,7 @@ export function PedidoForm({
               )}
               <button
                 type="button"
-                onClick={() => setProdutoDetalhe(null)}
+                onClick={fecharDetalheProduto}
                 aria-label="Fechar"
                 className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-lg text-white transition hover:bg-black/70"
               >
@@ -646,7 +696,7 @@ export function PedidoForm({
                   if ((carrinho[produtoDetalhe.id] ?? 0) === 0) {
                     alterarQuantidade(produtoDetalhe.id, 1);
                   } else {
-                    setProdutoDetalhe(null);
+                    fecharDetalheProduto();
                   }
                 }}
                 className="mt-4 w-full rounded-full bg-vermelho-vivo px-6 py-3 font-semibold text-preto transition hover:brightness-95 active:scale-[0.98]"
