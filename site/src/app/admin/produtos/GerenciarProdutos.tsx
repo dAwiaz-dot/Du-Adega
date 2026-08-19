@@ -45,6 +45,19 @@ export function GerenciarProdutos({
   const [categoriaFiltro, setCategoriaFiltro] = useState("todas");
   const [busca, setBusca] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const filtroScrollRef = useRef<HTMLDivElement>(null);
+  const produtoRowRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  function scrollFiltro(delta: number) {
+    filtroScrollRef.current?.scrollBy({ left: delta, behavior: "smooth" });
+  }
+
+  function voltarParaProduto(id: string | null) {
+    if (!id) return;
+    requestAnimationFrame(() => {
+      produtoRowRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }
 
   const categoriasExistentes = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.categoria))),
@@ -82,8 +95,10 @@ export function GerenciarProdutos({
   }
 
   function cancelarEdicao() {
+    const idEditado = form.id;
     setForm(FORM_VAZIO);
     setErro(null);
+    voltarParaProduto(idEditado);
   }
 
   async function enviarFoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -135,6 +150,8 @@ export function GerenciarProdutos({
         codigo_barras: form.codigoBarras.trim() || null,
       };
 
+      const idEditado = form.id;
+
       if (form.id) {
         const res = await fetch(`/api/produtos/${form.id}`, {
           method: "PATCH",
@@ -160,6 +177,7 @@ export function GerenciarProdutos({
       }
 
       setForm(FORM_VAZIO);
+      voltarParaProduto(idEditado);
     } catch (err) {
       setErro(err instanceof Error && err.message ? err.message : "Não foi possível salvar.");
     } finally {
@@ -338,30 +356,51 @@ export function GerenciarProdutos({
             onChange={(e) => setBusca(e.target.value)}
             className="w-full max-w-xs rounded-md border border-borda px-3 py-2 text-sm transition focus:border-vermelho focus:outline-none focus:ring-2 focus:ring-vermelho/20"
           />
-          <div className="no-scrollbar flex min-w-0 flex-1 gap-2 overflow-x-auto">
-            <button
-              onClick={() => setCategoriaFiltro("todas")}
-              className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-                categoriaFiltro === "todas"
-                  ? "border-vermelho bg-vermelho text-white"
-                  : "border-borda hover:border-vermelho hover:text-vermelho"
-              }`}
+          <div className="relative min-w-0 flex-1">
+            <div
+              ref={filtroScrollRef}
+              className="no-scrollbar flex gap-2 overflow-x-auto px-9"
             >
-              Todas
-            </button>
-            {categoriasExistentes.map((categoria) => (
               <button
-                key={categoria}
-                onClick={() => setCategoriaFiltro(categoria)}
+                onClick={() => setCategoriaFiltro("todas")}
                 className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-                  categoriaFiltro === categoria
+                  categoriaFiltro === "todas"
                     ? "border-vermelho bg-vermelho text-white"
                     : "border-borda hover:border-vermelho hover:text-vermelho"
                 }`}
               >
-                {categoria}
+                Todas
               </button>
-            ))}
+              {categoriasExistentes.map((categoria) => (
+                <button
+                  key={categoria}
+                  onClick={() => setCategoriaFiltro(categoria)}
+                  className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                    categoriaFiltro === categoria
+                      ? "border-vermelho bg-vermelho text-white"
+                      : "border-borda hover:border-vermelho hover:text-vermelho"
+                  }`}
+                >
+                  {categoria}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => scrollFiltro(-160)}
+              aria-label="Categorias anteriores"
+              className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-borda bg-background shadow-sm transition hover:border-vermelho hover:text-vermelho active:scale-90"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollFiltro(160)}
+              aria-label="Próximas categorias"
+              className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-borda bg-background shadow-sm transition hover:border-vermelho hover:text-vermelho active:scale-90"
+            >
+              ›
+            </button>
           </div>
         </div>
 
@@ -375,6 +414,9 @@ export function GerenciarProdutos({
                 {itens.map((produto) => (
                   <div
                     key={produto.id}
+                    ref={(el) => {
+                      produtoRowRefs.current[produto.id] = el;
+                    }}
                     className={`flex items-center gap-4 rounded-lg border p-4 ${
                       produto.ativo ? "border-borda bg-background" : "border-borda bg-borda/20 opacity-60"
                     }`}
