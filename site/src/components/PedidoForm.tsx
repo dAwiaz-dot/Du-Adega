@@ -138,8 +138,8 @@ export function PedidoForm({
           produtoRefs.current[produto.id] = el;
         }}
         style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
-        className={`group animate-fade-up flex items-center gap-4 rounded-lg border bg-background p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-          quantidade > 0 ? "border-vermelho" : "border-borda"
+        className={`group animate-fade-up flex items-center gap-4 rounded-xl border bg-background p-3.5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+          quantidade > 0 ? "border-vermelho ring-1 ring-vermelho/30" : "border-borda"
         }`}
       >
         <button
@@ -150,13 +150,13 @@ export function PedidoForm({
           }}
           className="flex min-w-0 flex-1 items-center gap-4 text-left"
         >
-          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-preto text-2xl">
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-preto text-2xl">
             {produto.imagem ? (
               <Image
                 src={produto.imagem}
                 alt={produto.nome}
                 fill
-                sizes="56px"
+                sizes="64px"
                 className="object-cover transition-transform duration-300 group-hover:scale-110"
               />
             ) : (
@@ -169,32 +169,34 @@ export function PedidoForm({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <p className="font-medium">{produto.nome}</p>
+              <p className="font-medium leading-snug">{produto.nome}</p>
               {produto.destaque && (
                 <span className="shrink-0 rounded-full bg-vermelho/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-vermelho">
                   {produto.destaque}
                 </span>
               )}
             </div>
-            <p className="text-sm text-foreground/60">R$ {produto.preco.toFixed(2)}</p>
-            <p className="text-xs text-foreground/50">{produto.categoria}</p>
+            <p className="mt-0.5 text-sm font-semibold text-vermelho">
+              R$ {produto.preco.toFixed(2)}
+            </p>
+            <p className="text-xs text-foreground/45">{produto.categoria}</p>
           </div>
         </button>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1 rounded-full border border-borda bg-card/60 p-1">
           <button
             type="button"
             onClick={() => alterarQuantidade(produto.id, -1)}
-            className="h-8 w-8 rounded-full border border-vermelho text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-vermelho font-semibold transition-transform duration-150 hover:scale-110 hover:bg-vermelho/10 active:scale-90"
           >
             −
           </button>
-          <span key={quantidade} className="w-6 text-center animate-pop">
+          <span key={quantidade} className="w-5 text-center text-sm animate-pop">
             {quantidade}
           </span>
           <button
             type="button"
             onClick={() => alterarQuantidade(produto.id, 1)}
-            className="h-8 w-8 rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-vermelho text-white font-semibold transition-transform duration-150 hover:scale-110 hover:brightness-110 active:scale-90"
           >
             +
           </button>
@@ -387,33 +389,35 @@ export function PedidoForm({
                   type="button"
                   onClick={() => abrirCategoria(categoria)}
                   style={{ animationDelay: `${Math.min(index, 8) * 50}ms` }}
-                  className="animate-fade-up group relative overflow-hidden rounded-xl border border-borda bg-background text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-vermelho hover:shadow-md active:scale-95"
+                  className="animate-fade-up group relative h-36 overflow-hidden rounded-2xl bg-preto text-left shadow-md shadow-black/10 ring-1 ring-borda transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-vermelho/10 hover:ring-vermelho active:scale-[0.97]"
                 >
+                  {capa ? (
+                    <Image
+                      src={capa}
+                      alt=""
+                      fill
+                      sizes="200px"
+                      className="object-cover opacity-80 transition-transform duration-300 group-hover:scale-110 group-hover:opacity-90"
+                    />
+                  ) : (
+                    <span className="absolute inset-0 flex items-center justify-center text-5xl opacity-60">
+                      {emojiCategoria(categoria)}
+                    </span>
+                  )}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 bg-gradient-to-t from-preto via-preto/40 to-transparent"
+                  />
                   {qtdNoCarrinho > 0 && (
-                    <span className="absolute right-2 top-2 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-vermelho text-xs font-bold text-white animate-pop">
+                    <span className="absolute right-2.5 top-2.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-vermelho-vivo text-xs font-bold text-preto shadow-md animate-pop">
                       {qtdNoCarrinho}
                     </span>
                   )}
-                  <div className="relative flex h-24 items-center justify-center overflow-hidden bg-preto">
-                    {capa ? (
-                      <Image
-                        src={capa}
-                        alt=""
-                        fill
-                        sizes="200px"
-                        className="object-cover transition-transform duration-300 group-hover:scale-110"
-                      />
-                    ) : (
-                      <span className="text-4xl">{emojiCategoria(categoria)}</span>
-                    )}
-                    <span
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 bg-gradient-to-t from-preto/70 via-transparent to-transparent"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="truncate font-medium">{categoria}</p>
-                    <p className="text-xs text-foreground/60">
+                  <div className="absolute inset-x-0 bottom-0 p-3.5">
+                    <p className="truncate font-display text-lg tracking-wide text-white">
+                      {categoria}
+                    </p>
+                    <p className="text-xs text-white/60">
                       {produtosCategoria.length}{" "}
                       {produtosCategoria.length === 1 ? "item" : "itens"}
                     </p>

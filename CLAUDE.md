@@ -1,6 +1,9 @@
-# Adega Alfenas
+# Du Bebidas
 
-> Projeto criado em 2026-07-31. Pasta dedicada — instruções aqui sobrescrevem as da raiz quando relevantes.
+> Projeto criado em 2026-07-31 como "Adega Alfenas" (nome interno), pasta
+> renomeada pra `Du-Bebidas` em 2026-08-21 pra bater com a marca real do
+> cliente. Pasta dedicada — instruções aqui sobrescrevem as da raiz quando
+> relevantes.
 
 ## Sobre
 
@@ -36,8 +39,7 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
 - **Nome e identidade visual: Du Bebidas.** Marca real do cliente (Instagram
   @du_bebidas.26), aplicada a partir de prints da placa da loja e da logo do
   perfil. Paleta em `site/src/app/globals.css`: preto `#0d0d0d` + vermelho
-  `#c8102e` / `#ff3b4e`. A pasta do projeto continua se chamando
-  `Adega-Alfenas` (nome interno), mas o site e os textos usam "Du Bebidas".
+  `#c8102e` / `#ff3b4e`.
 - **Catálogo é real, não fictício.** Gerenciado pelo cliente direto em
   `/admin/produtos` — só nesse dia (2026-08) já passava de 200 produtos em
   ~30 categorias (bebidas, salgadinhos, doces, cigarros, etc.), com fotos
