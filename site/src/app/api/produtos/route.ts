@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { isAdminRequest } from "@/lib/auth";
 import { listarProdutosSite, listarTodosProdutos, gerarIdProduto } from "@/lib/produtos";
 import { garantirCategoria } from "@/lib/categorias";
+import { registrarAjusteEstoque } from "@/lib/estoque";
 
 export async function GET(request: NextRequest) {
   const todos = request.nextUrl.searchParams.get("todos") === "1";
@@ -66,6 +67,10 @@ export async function POST(request: NextRequest) {
   });
 
   garantirCategoria(categoria.trim());
+
+  if (typeof estoque === "number") {
+    registrarAjusteEstoque(id, null, estoque);
+  }
 
   return NextResponse.json({ id }, { status: 201 });
 }

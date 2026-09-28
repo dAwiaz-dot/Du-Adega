@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const LINKS = [
+  { href: "/admin/dashboard", label: "Dashboard" },
   { href: "/admin", label: "Pedidos" },
   { href: "/admin/pdv", label: "PDV" },
   { href: "/admin/produtos", label: "Produtos" },
@@ -29,15 +30,15 @@ export function AdminNav({ adminNome }: { adminNome: string }) {
           <h1 className="text-lg font-semibold">Painel — Du Bebidas</h1>
           <p className="text-xs text-white/60">Logado como {adminNome}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <nav className="flex items-center gap-1 rounded-full bg-white/10 p-1">
+        <div className="flex min-w-0 max-w-full items-center gap-4">
+          <nav className="no-scrollbar flex min-w-0 items-center gap-1 overflow-x-auto rounded-full bg-white/10 p-1">
             {LINKS.map((link) => {
               const ativo = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                  className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium transition ${
                     ativo ? "bg-vermelho text-white" : "text-white/70 hover:text-white"
                   }`}
                 >
@@ -46,7 +47,7 @@ export function AdminNav({ adminNome }: { adminNome: string }) {
               );
             })}
           </nav>
-          <button onClick={sair} className="text-sm text-white/70 hover:text-white">
+          <button onClick={sair} className="shrink-0 text-sm text-white/70 hover:text-white">
             Sair
           </button>
         </div>

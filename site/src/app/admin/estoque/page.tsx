@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { listarMovimentosEstoque } from "@/lib/estoque";
 import { listarTodosProdutos } from "@/lib/produtos";
 import { AdminLogin } from "../AdminLogin";
-import { HistoricoEstoque } from "./HistoricoEstoque";
+import { ControleEstoque } from "./ControleEstoque";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +21,10 @@ export default async function AdminEstoquePage() {
   }
 
   const movimentos = listarMovimentosEstoque();
-  const produtos = listarTodosProdutos().filter((p) => p.estoque !== null);
+  const produtos = listarTodosProdutos().filter((p) => p.ativo);
   const adminNome = cookieStore.get("adega_admin_nome")?.value ?? "Admin";
 
   return (
-    <HistoricoEstoque movimentosIniciais={movimentos} produtosControlados={produtos} adminNome={adminNome} />
+    <ControleEstoque movimentosIniciais={movimentos} produtosIniciais={produtos} adminNome={adminNome} />
   );
 }

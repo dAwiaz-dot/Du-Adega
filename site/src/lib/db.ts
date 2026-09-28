@@ -351,7 +351,7 @@ export type Caixa = {
 export type EstoqueMovimento = {
   id: number;
   produto_id: string;
-  tipo: "venda_online" | "venda_pdv" | "ajuste";
+  tipo: "venda_online" | "venda_pdv" | "ajuste" | "entrada" | "perda" | "devolucao";
   quantidade: number;
   estoque_resultante: number;
   pedido_id: number | null;

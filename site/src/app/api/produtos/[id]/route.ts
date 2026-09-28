@@ -51,7 +51,7 @@ export async function PATCH(
 
   db.prepare(`UPDATE produtos SET ${campos.join(", ")} WHERE id = @id`).run(valores);
 
-  if ("estoque" in body && estoqueAntes !== null && typeof body.estoque === "number") {
+  if ("estoque" in body && typeof body.estoque === "number") {
     registrarAjusteEstoque(id, estoqueAntes, body.estoque);
   }
 
