@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: rootDir,
   },
+  experimental: {
+    cpus: 1,
+  },
 };
 
 export default nextConfig;

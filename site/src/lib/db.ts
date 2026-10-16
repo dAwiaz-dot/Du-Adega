@@ -8,11 +8,10 @@ fs.mkdirSync(path.dirname(dbPath), { recursive: true });
 
 const globalForDb = globalThis as unknown as { db?: Database.Database };
 
-export const db = globalForDb.db ?? new Database(dbPath);
+export const db = globalForDb.db ?? new Database(dbPath, { timeout: 30000 });
 globalForDb.db = db;
 
-db.pragma("journal_mode = WAL");
-db.pragma("busy_timeout = 8000");
+db.pragma("busy_timeout = 30000");
 
 // Vários workers do build (ou do Next em dev) abrem essa mesma conexão de
 // arquivo ao mesmo tempo no primeiro boot e tentam migrar o schema juntos.
@@ -205,6 +204,8 @@ const SEED_CATEGORIAS = [
 ];
 
 comLockDeSetup(() => {
+  db.pragma("journal_mode = WAL");
+
   db.exec(`
     CREATE TABLE IF NOT EXISTS pedidos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
