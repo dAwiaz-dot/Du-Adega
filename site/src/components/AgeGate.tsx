@@ -60,7 +60,7 @@ export function AgeGate() {
         }}
       />
 
-      <div className="relative w-full max-w-md animate-scale-in overflow-hidden rounded-2xl border border-borda bg-background text-center shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
+      <div className="tema-loja relative w-full max-w-md animate-scale-in overflow-hidden rounded-3xl border border-borda bg-card text-center shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
         <div className="relative bg-preto px-8 pb-8 pt-10">
           <span
             aria-hidden
@@ -109,7 +109,7 @@ export function AgeGate() {
             <button
               type="button"
               onClick={confirmar}
-              className="group relative flex w-full items-center justify-center overflow-hidden rounded-full bg-vermelho-vivo px-6 py-3 font-semibold text-preto transition hover:brightness-95 hover:shadow-lg hover:shadow-vermelho-vivo/30 active:scale-[0.98]"
+              className="group relative flex w-full items-center justify-center overflow-hidden rounded-full bg-vermelho px-6 py-3.5 font-semibold text-white transition hover:brightness-110 hover:shadow-lg hover:shadow-vermelho/30 active:scale-[0.98]"
             >
               <span
                 aria-hidden

@@ -1,6 +1,6 @@
 export function SocialFloat() {
   return (
-    <div className="fixed bottom-24 right-4 z-30 flex flex-col items-center gap-3 sm:right-6">
+    <div className="fixed bottom-24 right-6 z-30 hidden flex-col items-center gap-3 sm:flex">
       <a
         href="https://www.instagram.com/du_bebidas.26/"
         target="_blank"
