@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Pedido, PedidoItem } from "@/lib/db";
 import { AdminNav } from "./AdminNav";
+import { tocarSom } from "@/lib/efeitosAdmin";
 
 const STATUS_LABEL: Record<Pedido["status"], string> = {
   novo: "Novo",
@@ -21,29 +22,6 @@ const STATUS_ORDEM: Pedido["status"][] = [
 ];
 
 const POLL_MS = 8000;
-
-function tocarAlerta() {
-  try {
-    const AudioContextCtor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    const ctx = new AudioContextCtor();
-    const oscilador = ctx.createOscillator();
-    const ganho = ctx.createGain();
-    oscilador.type = "sine";
-    oscilador.frequency.value = 880;
-    ganho.gain.setValueAtTime(0.3, ctx.currentTime);
-    ganho.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-    oscilador.connect(ganho);
-    ganho.connect(ctx.destination);
-    oscilador.start();
-    oscilador.stop(ctx.currentTime + 0.5);
-    oscilador.onended = () => ctx.close();
-  } catch {
-    // navegador bloqueou áudio sem interação prévia — sem problema, é só o som
-  }
-}
 
 const MENSAGEM_STATUS: Record<Pedido["status"], (pedido: Pedido) => string> = {
   novo: (p) =>
@@ -186,7 +164,7 @@ export function PainelPedidos({
           );
           idsConhecidosRef.current = new Set(novosPedidos.map((p) => p.id));
 
-          if (temPedidoNovo) tocarAlerta();
+          if (temPedidoNovo) tocarSom("novoPedido");
 
           setPedidos(novosPedidos);
           setConectado(true);
