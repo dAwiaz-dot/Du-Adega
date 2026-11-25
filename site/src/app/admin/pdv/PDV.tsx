@@ -7,11 +7,8 @@ import type { Produto, Categoria, Caixa } from "@/lib/db";
 import type { ResumoVendasHoje } from "@/lib/pdv";
 import type { ResumoCaixa } from "@/lib/caixa";
 import { AdminNav } from "../AdminNav";
-import { tocarSom } from "@/lib/efeitosAdmin";
 
 type Carrinho = Record<string, number>;
-
-const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 
 const FORMAS_PAGAMENTO = ["Dinheiro", "Cartão", "Pix", "Fiado"] as const;
 
@@ -86,7 +83,6 @@ export function PDV({
 
   function alterarQuantidade(id: string, delta: number) {
     setUltimaVenda(null);
-    tocarSom("clique");
     setCarrinho((atual) => {
       const atualQtd = atual[id] ?? 0;
       const novaQtd = Math.max(0, atualQtd + delta);
@@ -141,10 +137,8 @@ export function PDV({
       const data = await res.json();
       if (!res.ok) {
         setErroCaixa(data.error ?? "Não foi possível abrir o caixa.");
-        tocarSom("erro");
         return;
       }
-      tocarSom("sucesso");
       setCaixa(data.caixa);
       setResumoCaixaState({
         caixa: data.caixa,
@@ -215,11 +209,9 @@ export function PDV({
 
       if (!res.ok) {
         setErro(data.error ?? "Não foi possível finalizar a venda.");
-        tocarSom("erro");
         return;
       }
 
-      tocarSom("venda");
       setUltimaVenda({ id: data.id, total: data.total });
       setCarrinho({});
       setClienteNomeFiado("");
@@ -276,7 +268,7 @@ export function PDV({
           <div>
             <p className="text-xs text-foreground/50">Vendas de balcão hoje</p>
             <p className="text-lg font-semibold text-vermelho">
-              {brl.format(resumo.totalGeral)}{" "}
+              R$ {resumo.totalGeral.toFixed(2)}{" "}
               <span className="text-sm font-normal text-foreground/50">
                 ({resumo.qtdVendas} venda{resumo.qtdVendas === 1 ? "" : "s"})
               </span>
@@ -286,7 +278,7 @@ export function PDV({
             <div key={linha.forma_pagamento}>
               <p className="text-xs text-foreground/50">{linha.forma_pagamento}</p>
               <p className="text-sm font-medium">
-                {brl.format(linha.total)} <span className="text-foreground/40">· {linha.qtd}</span>
+                R$ {linha.total.toFixed(2)} <span className="text-foreground/40">· {linha.qtd}</span>
               </p>
             </div>
           ))}
@@ -297,7 +289,7 @@ export function PDV({
                 <p className="text-xs text-foreground/50">
                   Caixa aberto às {horaCurta(caixa.aberto_em)}
                 </p>
-                <p className="text-sm font-medium">Inicial: {brl.format(caixa.valor_inicial)}</p>
+                <p className="text-sm font-medium">Inicial: R$ {caixa.valor_inicial.toFixed(2)}</p>
               </div>
               <button
                 onClick={() => setPainelFechamento(true)}
@@ -330,7 +322,7 @@ export function PDV({
               <button
                 type="submit"
                 disabled={abrindoCaixa}
-                className="mt-4 w-full rounded-full bg-vermelho px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-60"
+                className="mt-4 w-full rounded-full bg-vermelho-vivo px-6 py-3 font-semibold text-preto transition hover:brightness-95 active:scale-[0.98] disabled:opacity-60"
               >
                 {abrindoCaixa ? "Abrindo..." : "Abrir caixa"}
               </button>
@@ -426,7 +418,7 @@ export function PDV({
                         )}
                       </div>
                       <p className="text-xs font-medium leading-tight">{produto.nome}</p>
-                      <p className="text-xs text-foreground/60">{brl.format(produto.preco)}</p>
+                      <p className="text-xs text-foreground/60">R$ {produto.preco.toFixed(2)}</p>
                       {semEstoque && (
                         <span className="text-[10px] font-semibold uppercase text-red-600">
                           Sem estoque
@@ -468,7 +460,7 @@ export function PDV({
                         </button>
                       </div>
                       <span className="w-16 shrink-0 text-right font-medium">
-                        {brl.format((item.preco * item.quantidade))}
+                        R$ {(item.preco * item.quantidade).toFixed(2)}
                       </span>
                     </li>
                   ))}
@@ -518,7 +510,7 @@ export function PDV({
               <div className="mt-4 flex items-center justify-between rounded-lg bg-preto px-4 py-3 text-white">
                 <span className="font-semibold">Total</span>
                 <span key={total} className="animate-pop text-lg font-semibold text-vermelho-vivo">
-                  {brl.format(total)}
+                  R$ {total.toFixed(2)}
                 </span>
               </div>
 
@@ -526,7 +518,7 @@ export function PDV({
 
               {ultimaVenda && (
                 <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
-                  Venda #{ultimaVenda.id} registrada — {brl.format(ultimaVenda.total)}
+                  Venda #{ultimaVenda.id} registrada — R$ {ultimaVenda.total.toFixed(2)}
                 </p>
               )}
 
@@ -534,7 +526,7 @@ export function PDV({
                 type="button"
                 onClick={finalizarVenda}
                 disabled={itensCarrinho.length === 0 || finalizando}
-                className="mt-4 w-full rounded-full bg-vermelho px-6 py-3 font-semibold text-white transition hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+                className="mt-4 w-full rounded-full bg-vermelho-vivo px-6 py-3 font-semibold text-preto transition hover:brightness-95 active:scale-[0.98] disabled:opacity-50"
               >
                 {finalizando ? "Registrando..." : `Finalizar venda (${qtdTotalItens})`}
               </button>
@@ -548,7 +540,7 @@ export function PDV({
           <div className="w-full max-w-sm animate-scale-in rounded-lg bg-background p-6">
             <h2 className="font-display text-xl tracking-wide text-preto">Fechar caixa</h2>
             <p className="mt-1 text-xs text-foreground/50">
-              Aberto às {horaCurta(caixa.aberto_em)} · inicial {brl.format(caixa.valor_inicial)}
+              Aberto às {horaCurta(caixa.aberto_em)} · inicial R$ {caixa.valor_inicial.toFixed(2)}
             </p>
 
             <div className="mt-4 space-y-1.5 text-sm">
@@ -558,16 +550,16 @@ export function PDV({
               {resumoCaixaState.porFormaPagamento.map((linha) => (
                 <div key={linha.forma_pagamento} className="flex justify-between">
                   <span>{linha.forma_pagamento}</span>
-                  <span className="font-medium">{brl.format(linha.total)}</span>
+                  <span className="font-medium">R$ {linha.total.toFixed(2)}</span>
                 </div>
               ))}
               <div className="flex justify-between border-t border-borda pt-1.5 font-semibold">
                 <span>Total vendido</span>
-                <span>{brl.format(resumoCaixaState.totalVendas)}</span>
+                <span>R$ {resumoCaixaState.totalVendas.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-vermelho font-semibold">
                 <span>Esperado em dinheiro</span>
-                <span>{brl.format(resumoCaixaState.valorEsperadoDinheiro)}</span>
+                <span>R$ {resumoCaixaState.valorEsperadoDinheiro.toFixed(2)}</span>
               </div>
             </div>
 
