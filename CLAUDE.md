@@ -49,6 +49,12 @@ definidos em `_memoria/` da raiz. Não usa a identidade visual da Ryze
   mais arquivo estático de seed em uso; o `SEED_PRODUTOS`/`SEED_CATEGORIAS`
   em `site/src/lib/db.ts` só roda no primeiro boot de um banco vazio (ex:
   ambiente local do zero).
+- **Nunca perder ou alterar o catálogo em produção.** Produtos, categorias,
+  fotos e estoque são do cliente e não podem se perder. Antes de mexer em
+  qualquer coisa que toque o banco, salvar cópia do catálogo em `backups/`
+  (fora do git). Mudanças de dados em produção só com ok explícito, só no
+  campo necessário, e sem apagar nada. Depois de todo deploy, conferir se a
+  contagem de produtos e categorias continua igual.
 - **Logo recriada, não é a original.** `site/public/logo-du-bebidas.svg`
   foi desenhada do zero a partir dos prints (placa da loja + foto de
   perfil do Instagram), não é o arquivo oficial do cliente. Trocar se ele
